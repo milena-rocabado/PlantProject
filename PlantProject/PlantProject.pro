@@ -25,14 +25,21 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
+        analizador.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
+        analizador.h \
         mainwindow.h
 
 FORMS += \
         mainwindow.ui
+
+INCLUDEPATH += "C:\OpenCV\OpenCV4.1.1G\include"
+
+LIBS += -L"C:\OpenCV\OpenCV4.1.1G\lib"\
+ -llibopencv_world411
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
