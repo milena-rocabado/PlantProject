@@ -14,12 +14,12 @@ void analizar_2_frames();
 
 void analizar_video();
 
-void analizar_frame(cv::Mat img, std::string name);
+void analizar_frame(std::string name);
 
-void umbralizar_frame(cv::Mat img);
+void umbralizar_frame();
 
-void umbral_medio(cv::Mat img);
+void umbral_medio();
 
-void umbral_fijo(cv::Mat img);
+void umbral_fijo();
 
 #endif // ANALIZADOR_H

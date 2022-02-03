@@ -8,9 +8,9 @@ using namespace cv;
 
 static VideoCapture video;
 static VideoWriter salida;
+static Mat frame;
 
-static bool mostrar;
-static double umbral_suma = 0.;
+static bool mostrar = false;
 
 bool set_video(string path) {
     cout << path << endl;
@@ -19,15 +19,15 @@ bool set_video(string path) {
 
     video.open(path);
 
-//    if (salida.isOpened())
-//        salida.release();
+    if (salida.isOpened())
+        salida.release();
 
-//    salida.open(outfilename(path), VideoWriter::fourcc('D','I','V','X'),
-//                video.get(CAP_PROP_FPS),
-//                Size(static_cast<int>(video.get(CAP_PROP_FRAME_WIDTH)),
-//                     static_cast<int>(video.get(CAP_PROP_FRAME_HEIGHT))));
+    salida.open(outfilename(path), static_cast<int>(video.get(CAP_PROP_FOURCC)),
+                video.get(CAP_PROP_FPS),
+                Size(static_cast<int>(video.get(CAP_PROP_FRAME_WIDTH)),
+                     static_cast<int>(video.get(CAP_PROP_FRAME_HEIGHT))));
 
-    return video.isOpened(); // && salida.isOpened();
+    return video.isOpened() && salida.isOpened();
 }
 
 string outfilename(const string& filename) {
@@ -37,8 +37,7 @@ string outfilename(const string& filename) {
 }
 
 void show_video() {
-    int i = 0;
-    Mat img;
+    Mat frame;
 
     if (! video.isOpened()) return;
 
@@ -46,19 +45,15 @@ void show_video() {
     moveWindow("Video", 10, 10);
 
     while (true) {
-        i++;
-        video >> img;
+        video >> frame;
 
-        if (img.empty()) {
-            cout << "Last frame " << i - 1 << endl;
+        if (frame.empty()) {
             break;
         }
 
-        imshow("Video", img);
+        imshow("Video", frame);
         Sleep(1000);
     }
-
-    destroyAllWindows();
 }
 
 void analizar_2_frames() {
@@ -66,109 +61,103 @@ void analizar_2_frames() {
 
     // frame de noche
     video.set(CAP_PROP_POS_MSEC, 10000);
-    Mat img_n;
-    video >> img_n;
-    analizar_frame(img_n, "night_frame");
+    video >> frame;
+    analizar_frame("night_frame");
 
     // frame de dia
     video.set(CAP_PROP_POS_MSEC, 15000);
-    Mat img_d;
-    video >> img_d;
-    analizar_frame(img_d, "day_frame");
+    video >> frame;
+    analizar_frame("day_frame");
 
-    // salida.release();
+    salida.release();
     video.release();
 }
 
 void analizar_video() {
     mostrar = false;
     // video.set(CAP_PROP_POS_MSEC, 10000);
-    int i = 0, num_medias = 0;
-    double medias = 0., umbral_medio;
-    Mat frame;
+    int i = 0;
 
     while (true) {
         video >> frame;
 
-        if (frame.empty()) {
-            umbral_medio = medias / num_medias;
-            cout << "Umbral medio: " << umbral_medio << endl;
+        if (frame.empty() || i == 600) {
             break;
         }
 
-        analizar_frame(frame, to_string(i));
-        // salida << frame;
+        if ((i + 1) % 150 == 0) {
+            cout << (i + 1) / 30 << " segundos analizados." << endl;
+            mostrar = true;
+        } else mostrar = false;
 
-        if ((i + 1) % 300 == 0) {
-            double media_parcial = umbral_suma / 300;
-            medias += media_parcial;
-            num_medias++;
-            umbral_suma = 0.;
-            cout << "(" << (i + 1) / 300 << ") Media parcial: " << media_parcial << endl;
-        }
+        analizar_frame(to_string(i));
 
+        salida.write(frame);
         i++;
     }
     cout << "Total frames: " << i-1 << endl;
 
-    // salida.release();
+    salida.release();
     video.release();
 }
 
-void analizar_frame(Mat img, string name) {
+void analizar_frame(string name) {
+    // frame.convertTo(frame, CV_8UC1, 2);
     // A escala de grises
-    cvtColor(img, img, COLOR_RGB2GRAY);
+    cvtColor(frame, frame, COLOR_RGB2GRAY);
     // Aumenta contraste
-    img *= 2;
+    frame *= 2;
 
     if (mostrar) {
         namedWindow(name, WINDOW_NORMAL);
         moveWindow(name, 10, 0);
-        imshow(name, img);
+        resizeWindow(name, frame.size().width, frame.size().height);
+        imshow(name, frame);
     }
 
-    umbralizar_frame(img);
-    name.append("2");
+    umbralizar_frame();
+    name.append("-umbral");
 
     if (mostrar) {
         namedWindow(name, WINDOW_NORMAL);
-        moveWindow(name, 2000, 0);
-        imshow(name, img);
+        moveWindow(name, 540, 0);
+        resizeWindow(name, frame.size().width, frame.size().height);
+        imshow(name, frame);
     }
 }
 
-void umbralizar_frame(Mat img) {
+void umbralizar_frame() {
     // Umbral fijo con valor medio
-    // umbral_medio(img);
+    // umbral_medio(frame);
 
     // Umbral fijo
-    umbral_fijo(img);
+    umbral_fijo();
 
     // Umbral adaptativo media
-    // adaptiveThreshold(img, img, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 7, 2);
+    // adaptiveThreshold(frame, frame, 255, ADAPTIVE_THRESH_MEAN_C, THRESH_BINARY, 7, 2);
 }
 
-void umbral_medio(cv::Mat img) {
+void umbral_medio() {
     double minVal, maxVal;
 
     // Máscara para descartar el texto inferior
-    Mat mask(img.size(), CV_8UC1, Scalar(0));
-    Rect rec(0, 0, img.size().width, 645);
+    Mat mask(frame.size(), CV_8UC1, Scalar(0));
+    Rect rec(0, 0, frame.size().width, 645);
     rectangle(mask, rec, Scalar(255), FILLED);
 
     // Calcular umbral como media entre valores máximo mínimo de gris
-    minMaxLoc(img, &minVal, &maxVal, nullptr, nullptr, mask);
+    minMaxLoc(frame, &minVal, &maxVal, nullptr, nullptr, mask);
     double umbral = (maxVal + minVal) / 2;
 
     if (mostrar)
-        cout << "Minimo: "<< minVal <<  " Maximo: "<< maxVal << " Umbral: " << umbral << endl;
+        cout << "Minimo: "<< minVal <<  " Maximo: " << maxVal << " Umbral: " << umbral << endl;
 
-    umbral_suma += umbral;
-
-    threshold(img, img, umbral, 255, THRESH_BINARY);
+    threshold(frame, frame, umbral, 255, THRESH_BINARY);
 }
 
-void umbral_fijo(cv::Mat img) {
+void umbral_fijo() {
     double umbral = 132.526;
-    threshold(img, img, umbral, 255, THRESH_BINARY);
+    if (mostrar)
+        cout << "Umbral: " << umbral << endl;
+    threshold(frame, frame, umbral, 255, THRESH_BINARY);
 }
