@@ -6,7 +6,9 @@
 
 bool set_video(std::string path);
 
-std::string outfilename(const std::string& filename);
+// --------------------------------------------------------
+// --------------- OPERACIONES SOBRE VIDEO ----------------
+// --------------------------------------------------------
 
 void show_video();
 
@@ -14,12 +16,32 @@ void analizar_2_frames();
 
 void analizar_video();
 
+// --------------------------------------------------------
+// --------------- OPERACIONES SOBRE FRAMES ---------------
+// --------------------------------------------------------
+
 void analizar_frame(std::string name);
 
-void umbralizar_frame();
+void mostrar_frame(cv::Mat frame, std::string name);
+
+void imprimir_hist(cv::Mat img);
+
+// PREPROCESADO
+
+void preprocesar();
+
+// UMBRALIZADO
+
+void umbralizar();
 
 void umbral_medio();
 
 void umbral_fijo();
+
+// MORFOLOGÍA
+
+void invertir();
+
+void abrir();
 
 #endif // ANALIZADOR_H
