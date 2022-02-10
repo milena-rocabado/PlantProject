@@ -113,6 +113,7 @@ void analizar_video() {
 
 void analizar_frame(string name) {
     mostrar_frame(frame, name);
+    imprimir_hist(frame);
 
     preprocesar();
     mostrar_frame(frame, name.append("-pro"));
@@ -135,7 +136,8 @@ void mostrar_frame(Mat frame, string name) {
 }
 
 void imprimir_hist(Mat img) {
-    string filename = "hist32-" + to_string(num) + ".csv";
+    string dn = num % 2 == 0 ? "n-" : "d-";
+    string filename = "hist128-" + dn + to_string(num/2) + ".csv";
 
     ofstream file(filename);
     if (! file.is_open()) {
@@ -145,7 +147,7 @@ void imprimir_hist(Mat img) {
 
     Mat hist;
     int canales[] = { 0 };
-    int tam[] = { 64 };
+    int tam[] = { 128 };
     float rango[] = { 0.f, 256.f };
     const float *rangos[] = { rango };
 
