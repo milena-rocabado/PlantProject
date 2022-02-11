@@ -24,8 +24,6 @@ void analizar_frame(std::string name);
 
 void mostrar_frame(cv::Mat frame, std::string name);
 
-void imprimir_hist(cv::Mat img);
-
 // PREPROCESADO
 
 void preprocesar();

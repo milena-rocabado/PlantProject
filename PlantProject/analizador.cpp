@@ -12,7 +12,6 @@ static VideoWriter salida;
 static Mat frame;
 
 static bool mostrar = false;
-static int num = 0;
 
 string outfilename(const string& filename);
 
@@ -34,13 +33,13 @@ bool set_video(string path) {
 
     return video.isOpened() && salida.isOpened();
 }
-
+// ------------------------------------------------------------------
 string outfilename(const string& filename) {
     size_t lastdot = filename.find_last_of(".");
     if (lastdot == string::npos) return filename;
     return filename.substr(0, lastdot).append("_thr.avi");
 }
-
+// ------------------------------------------------------------------
 void show_video() {
     assert(video.isOpened());
     Mat frame;
@@ -62,7 +61,7 @@ void show_video() {
         Sleep(ms);
     }
 }
-
+// ------------------------------------------------------------------
 void analizar_2_frames() {
     assert(video.isOpened());
     mostrar = true;
@@ -81,24 +80,23 @@ void analizar_2_frames() {
     salida.release();
     video.release();
 }
-
+// ------------------------------------------------------------------
 void analizar_video() {
     assert(video.isOpened());
     assert(salida.isOpened());
 
     mostrar = false;
-    // video.set(CAP_PROP_POS_MSEC, 10000);
     int i = 0;
 
     while (true) {
         video >> frame;
 
-        if (frame.empty() || i == 600) break;
+        if (frame.empty() /*|| i == 600*/) break;
 
         if ((i + 1) % 150 == 0) {
             cout << (i + 1) / 30 << " segundos analizados." << endl;
-            mostrar = true;
-        } else mostrar = false;
+            //mostrar = true;
+        } //else mostrar = false;
 
         analizar_frame(to_string(i));
 
@@ -110,22 +108,17 @@ void analizar_video() {
     salida.release();
     video.release();
 }
-
+// ------------------------------------------------------------------
 void analizar_frame(string name) {
     mostrar_frame(frame, name);
-    imprimir_hist(frame);
 
     preprocesar();
     mostrar_frame(frame, name.append("-pro"));
-    imprimir_hist(frame);
 
     umbralizar();
     mostrar_frame(frame, name.append("-umbral"));
-
-//    abrir();
-//    mostrar_frame(frame, name.append("-abierto"));
 }
-
+// ------------------------------------------------------------------
 void mostrar_frame(Mat frame, string name) {
     if (mostrar) {
         namedWindow(name, WINDOW_NORMAL);
@@ -135,34 +128,9 @@ void mostrar_frame(Mat frame, string name) {
     }
 }
 
-void imprimir_hist(Mat img) {
-    string dn = num % 2 == 0 ? "n-" : "d-";
-    string filename = "hist128-" + dn + to_string(num/2) + ".csv";
-
-    ofstream file(filename);
-    if (! file.is_open()) {
-        cerr << "No es posible abrir el archivo para el histograma." << endl;
-        return;
-    }
-
-    Mat hist;
-    int canales[] = { 0 };
-    int tam[] = { 128 };
-    float rango[] = { 0.f, 256.f };
-    const float *rangos[] = { rango };
-
-    calcHist(&img, 1, canales, noArray(), hist, 1, tam, rangos);
-
-    for (int i = 0; i < tam[0]; i++) {
-        file << i << ", " << hist.at<float>(i) << endl;
-    }
-    file << endl;
-    num++;
-}
-
-// --------------------------------------------------------
-// --------------------- PREPROCESADO ---------------------
-// --------------------------------------------------------
+// ------------------------------------------------------------------
+// -------------------------- PREPROCESADO --------------------------
+// ------------------------------------------------------------------
 
 void preprocesar() {
     // frame.convertTo(frame, CV_8UC1, 2);
@@ -194,9 +162,10 @@ void umbralizar() {
     //                   THRESH_BINARY, 15, 2);
 
     // Binarización de Otsu
-    threshold(frame, frame, 0, 255, THRESH_OTSU);
+    double thr = threshold(frame, frame, 0, 255, THRESH_OTSU);
+    cout << "Umbral: " << thr << endl;
 }
-
+// ------------------------------------------------------------------
 void umbral_medio() {
     double minVal, maxVal;
 
@@ -216,7 +185,7 @@ void umbral_medio() {
 
     threshold(frame, frame, umbral, 255, THRESH_BINARY);
 }
-
+// ------------------------------------------------------------------
 void umbral_fijo() {
     double umbral = 132.526;
     if (mostrar)
@@ -231,7 +200,7 @@ void umbral_fijo() {
 void invertir() {
     frame = 255 - frame;
 }
-
+// -------------------------------------------------------------------
 void abrir() {
     Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
     morphologyEx(frame, frame, MORPH_OPEN, kernel);
