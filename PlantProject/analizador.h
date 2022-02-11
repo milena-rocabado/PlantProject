@@ -4,42 +4,20 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 
-bool set_video(std::string path);
+class Analizador {
+public:
+    bool set_video(std::string path);
+    void show_video();
 
-// --------------------------------------------------------
-// --------------- OPERACIONES SOBRE VIDEO ----------------
-// --------------------------------------------------------
+    virtual void analizar_video();
+    virtual ~Analizador();
 
-void show_video();
+protected:
+    static cv::VideoCapture _video;
+    static cv::VideoWriter _salida;
 
-void analizar_2_frames();
-
-void analizar_video();
-
-// --------------------------------------------------------
-// --------------- OPERACIONES SOBRE FRAMES ---------------
-// --------------------------------------------------------
-
-void analizar_frame(std::string name);
-
-void mostrar_frame(cv::Mat frame, std::string name);
-
-// PREPROCESADO
-
-void preprocesar();
-
-// UMBRALIZADO
-
-void umbralizar();
-
-void umbral_medio();
-
-void umbral_fijo();
-
-// MORFOLOGÍA
-
-void invertir();
-
-void abrir();
+private:
+    std::string outfilename(const std::string& filename);
+};
 
 #endif // ANALIZADOR_H

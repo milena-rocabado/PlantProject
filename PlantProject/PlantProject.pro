@@ -26,11 +26,14 @@ CONFIG += c++11
 
 SOURCES += \
         analizador.cpp \
+        analizadorframes.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
         analizador.h \
+        analizadorframes.h \
+        enums.h \
         mainwindow.h
 
 FORMS += \
