@@ -25,15 +25,18 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
-        analizador.cpp \
-        analizadorframes.cpp \
+        Analizador.cpp \
+        AnalizadorBgSubtractor.cpp \
+        AnalizadorFrames.cpp \
+        AnalizadorVideo.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
-        analizador.h \
-        analizadorframes.h \
-        enums.h \
+        Analizador.h \
+        AnalizadorBgSubtractor.h \
+        AnalizadorFrames.h \
+        AnalizadorVideo.h \
         mainwindow.h
 
 FORMS += \

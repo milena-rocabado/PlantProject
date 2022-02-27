@@ -1,21 +1,58 @@
-#include "analizadorframes.h"
+#include "AnalizadorFrames.h"
 
 using namespace std;
 using namespace cv;
 
+Umbralizado AnalizadorFrames::umbralizado() {
+    return _umbralizado;
+}
+// -------------------------------------------------------------------
+double AnalizadorFrames::contraste() {
+    return _contraste;
+}
+// -------------------------------------------------------------------
+bool AnalizadorFrames::mostrar() {
+    return _mostrar;
+}
+// -------------------------------------------------------------------
+void AnalizadorFrames::set_umbralizado(const Umbralizado &umbralizado) {
+    _umbralizado = umbralizado;
+}
+// -------------------------------------------------------------------
+void AnalizadorFrames::set_contraste(const double &contraste) {
+    _contraste = contraste;
+}
+// -------------------------------------------------------------------
+void AnalizadorFrames::set_mostrar(const bool &mostrar) {
+    _mostrar = mostrar;
+}
+// ------------------------------------------------------------------
+std::string AnalizadorFrames::umbralizado_to_string(Umbralizado u) {
+   switch (u) {
+   case Umbralizado::Medio:           return "Medio";
+   case Umbralizado::Fijo:            return "Fijo";
+   case Umbralizado::AdaptativoMedia: return "Adaptativo de media";
+   case Umbralizado::AdaptativoGauss: return "Adaptativo gaussiano";
+   case Umbralizado::Otsu:            return "Binarización de Otsu";
+   }
+   return "Invalid enum";
+}
 // -------------------------------------------------------------------
 void AnalizadorFrames::analizar_2_frames() {
     assert(_video.isOpened());
     _mostrar = true;
 
-    // _frame de noche
-    // video.set(CAP_PROP_POS_MSEC, 10000);
+    // frame de noche
+    // _video.set(CAP_PROP_POS_MSEC, 10000);
+    _video.set(CAP_PROP_POS_FRAMES, DAY_SAMPLE_POS);
+
     _video >> _frame;
     analizar_frame("night__frame");
 
-    // _frame de dia
-    // video.set(CAP_PROP_POS_MSEC, 15000);
-    _video.set(CAP_PROP_POS_MSEC, 35000);
+    // frame de dia
+    // _video.set(CAP_PROP_POS_MSEC, 15000);
+    // _video.set(CAP_PROP_POS_MSEC, 35000);
+    _video.set(CAP_PROP_POS_FRAMES, NIGHT_SAMPLE_POS);
     _video >> _frame;
     analizar_frame("day__frame");
 
@@ -45,7 +82,7 @@ void AnalizadorFrames::analizar_video() {
         _salida.write(_frame);
         i++;
     }
-    cout << "Total _frames: " << i-1 << endl;
+    cout << "Total frames: " << i-1 << endl;
 
     _salida.release();
     _video.release();
@@ -61,19 +98,14 @@ void AnalizadorFrames::analizar_frame(string name) {
     mostrar_frame(_frame, name.append("-umbral"));
 }
 // -------------------------------------------------------------------
-void AnalizadorFrames::mostrar_frame(Mat frame, string name) {
+void AnalizadorFrames::mostrar_frame(const Mat &frame, const string &name) {
     if (_mostrar) {
-        namedWindow(name, WINDOW_NORMAL);
-        moveWindow(name, 0, 0);
-        resizeWindow(name, frame.size().width, frame.size().height);
-        imshow(name, frame);
+        Analizador::mostrar_frame(frame, name);
     }
 }
-
 // -------------------------------------------------------------------
 // -------------------------- PREPROCESADO ---------------------------
 // -------------------------------------------------------------------
-
 void AnalizadorFrames::preprocesar() {
     // frame.convertTo(frame, CV_8UC1, 2);
 
@@ -86,7 +118,6 @@ void AnalizadorFrames::preprocesar() {
 // -------------------------------------------------------------------
 // -------------------------- UMBRALIZADO ----------------------------
 // -------------------------------------------------------------------
-
 void AnalizadorFrames::umbralizar() {
     switch(_umbralizado){
     case Umbralizado::Fijo:
