@@ -1,4 +1,5 @@
 #include "AnalizadorFrames.h"
+#include <qdebug.h>
 
 using namespace std;
 using namespace cv;
@@ -12,7 +13,7 @@ double AnalizadorFrames::contraste() {
 }
 // -------------------------------------------------------------------
 bool AnalizadorFrames::mostrar() {
-    return _mostrar;
+    return _ejemplo;
 }
 // -------------------------------------------------------------------
 void AnalizadorFrames::set_umbralizado(const Umbralizado &umbralizado) {
@@ -24,7 +25,7 @@ void AnalizadorFrames::set_contraste(const double &contraste) {
 }
 // -------------------------------------------------------------------
 void AnalizadorFrames::set_mostrar(const bool &mostrar) {
-    _mostrar = mostrar;
+    _ejemplo = mostrar;
 }
 // ------------------------------------------------------------------
 std::string AnalizadorFrames::umbralizado_to_string(Umbralizado u) {
@@ -40,21 +41,22 @@ std::string AnalizadorFrames::umbralizado_to_string(Umbralizado u) {
 // -------------------------------------------------------------------
 void AnalizadorFrames::analizar_2_frames() {
     assert(_video.isOpened());
-    _mostrar = true;
+    assert(_salida.isOpened());
+    _ejemplo = true;
 
     // frame de noche
     // _video.set(CAP_PROP_POS_MSEC, 10000);
     _video.set(CAP_PROP_POS_FRAMES, DAY_SAMPLE_POS);
 
     _video >> _frame;
-    analizar_frame("night__frame");
+    analizar_frame("night_frame");
 
     // frame de dia
     // _video.set(CAP_PROP_POS_MSEC, 15000);
     // _video.set(CAP_PROP_POS_MSEC, 35000);
     _video.set(CAP_PROP_POS_FRAMES, NIGHT_SAMPLE_POS);
     _video >> _frame;
-    analizar_frame("day__frame");
+    analizar_frame("day_frame");
 
     _salida.release();
     _video.release();
@@ -64,25 +66,22 @@ void AnalizadorFrames::analizar_video() {
     assert(_video.isOpened());
     assert(_salida.isOpened());
 
-    _mostrar = false;
-    int i = 0;
+    _ejemplo = false;
+    _i = 0;
 
     while (true) {
         _video >> _frame;
 
-        if (_frame.empty() /*|| i == 600*/) break;
+        if (_i == 1051 || _frame.empty()) break;
 
-        if ((i + 1) % 150 == 0) {
-            cout << (i + 1) / 30 << " segundos analizados." << endl;
-            //_mostrar = true;
-        } //else _mostrar = false;
+        _ejemplo = _i == NIGHT_SAMPLE_POS || _i == DAY_SAMPLE_POS;
 
-        analizar_frame(to_string(i));
+        analizar_frame(to_string(_i));
 
-        _salida.write(_frame);
-        i++;
+        _salida << _frame;
+        _i++;
     }
-    cout << "Total frames: " << i-1 << endl;
+    cout << "Total frames: " << _i-1 << endl;
 
     _salida.release();
     _video.release();
@@ -92,14 +91,16 @@ void AnalizadorFrames::analizar_frame(string name) {
     mostrar_frame(_frame, name);
 
     preprocesar();
-    mostrar_frame(_frame, name.append("-pro"));
+    //mostrar_frame(_frame, name.append("-pro"));
+    if (_ejemplo) save_image(_frame, "umbr", name + "-pr");
 
     umbralizar();
-    mostrar_frame(_frame, name.append("-umbral"));
+    mostrar_frame(_frame, name + "-umbral");
+    if (_ejemplo) save_image(_frame, "umbr", name + "-mask");
 }
 // -------------------------------------------------------------------
 void AnalizadorFrames::mostrar_frame(const Mat &frame, const string &name) {
-    if (_mostrar) {
+    if (_ejemplo) {
         Analizador::mostrar_frame(frame, name);
     }
 }
@@ -107,13 +108,14 @@ void AnalizadorFrames::mostrar_frame(const Mat &frame, const string &name) {
 // -------------------------- PREPROCESADO ---------------------------
 // -------------------------------------------------------------------
 void AnalizadorFrames::preprocesar() {
-    // frame.convertTo(frame, CV_8UC1, 2);
-
     // A escala de grises
     cvtColor(_frame, _frame, COLOR_RGB2GRAY);
+    if (_ejemplo) qDebug() << "preprocesar: to grayscale";
 
     // Aumentar contraste
     _frame *= _contraste;
+    if (_ejemplo) qDebug() << "preprocesar: contrast fix alpha = "
+                           << _contraste;
 }
 // -------------------------------------------------------------------
 // -------------------------- UMBRALIZADO ----------------------------
@@ -140,8 +142,8 @@ void AnalizadorFrames::umbralizar() {
 // -------------------------------------------------------------------
 void AnalizadorFrames::umbral_fijo() {
     double umbral = 132.526;
-    if (_mostrar)
-        cout << "Umbral: " << umbral << endl;
+    if (_ejemplo)
+        qDebug() << "umbral_fijo: Umbral= " << umbral;
     threshold(_frame, _frame, umbral, 255, THRESH_BINARY);
 }
 // -------------------------------------------------------------------
@@ -157,9 +159,9 @@ void AnalizadorFrames::umbral_medio() {
     minMaxLoc(_frame, &minVal, &maxVal, nullptr, nullptr, mask);
     double umbral = (maxVal + minVal) / 2;
 
-    if (_mostrar) {
-        cout << "Minimo: "<< minVal <<  " Maximo: " << maxVal;
-        cout << " Umbral: " << umbral << endl;
+    if (_ejemplo) {
+        qDebug() << "umbral_media: Minimo = "<< minVal <<  " Maximo = "
+                 << maxVal << " Umbral = " << umbral;
     }
 
     threshold(_frame, _frame, umbral, 255, THRESH_BINARY);
@@ -176,18 +178,19 @@ void AnalizadorFrames::umbral_adaptativo_gauss() {
 }
 // -------------------------------------------------------------------
 void AnalizadorFrames::umbral_otsu() {
+    // crop_time_bar(_frame);
+    if (_ejemplo) {
+        qDebug() << "umbral_otsu: time bar cropped";
+        save_image(_frame, "umbr", to_string(_i)+"-cropped");
+    }
+
+
     double thr = threshold(_frame, _frame, 0, 255, THRESH_OTSU);
-    if (_mostrar)
-        cout << "Umbral: " << thr << endl;
+    if (_ejemplo) qDebug() << "umbral_otsu: threshold = " << thr;
 }
 // -------------------------------------------------------------------
 // --------------------------- MORFOLOGÍA ----------------------------
 // -------------------------------------------------------------------
 void AnalizadorFrames::invertir() {
     _frame = 255 - _frame;
-}
-// -------------------------------------------------------------------
-void AnalizadorFrames::abrir() {
-    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
-    morphologyEx(_frame, _frame, MORPH_OPEN, kernel);
 }

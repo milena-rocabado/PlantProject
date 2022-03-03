@@ -52,7 +52,7 @@ bool Analizador::set_video(const string &path, const bool &isColor) {
     if ( !_salida.isOpened()) {
         qCritical() << "set_video: Error creating output file _salida";
         return false;
-    }
+    } qDebug() << "set_video: ouput video isColor = " << isColor;
 
     return true;
 }
@@ -123,4 +123,14 @@ void Analizador::save_image(const Mat &im, const string &dir, const string &file
 void Analizador::apply_mask(const Mat &img, const Mat &mask, Mat &dst) {
     dst.release();
     img.copyTo(dst, mask);
+}
+// ------------------------------------------------------------------
+void Analizador::crop_time_bar(cv::Mat &img) {
+    Rect roi(0, 0, img.size().width, img.size().height - 20);
+    img = img(roi);
+}
+// -------------------------------------------------------------------
+void Analizador::abrir(Mat &img) {
+    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
+    morphologyEx(img, img, MORPH_OPEN, kernel);
 }

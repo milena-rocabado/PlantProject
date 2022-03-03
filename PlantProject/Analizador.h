@@ -31,6 +31,9 @@ protected:
     std::string build_abs_path(const std::string &path);
     void save_image(const cv::Mat &im, const std::string &dir, const std::string &filename);
     void apply_mask(const cv::Mat &img, const cv::Mat &mask, cv::Mat &dst);
+    void crop_time_bar(cv::Mat &);
+
+    void abrir(cv::Mat &);
 };
 
 #endif // ANALIZADOR_H

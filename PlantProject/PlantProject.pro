@@ -28,7 +28,8 @@ SOURCES += \
         Analizador.cpp \
         AnalizadorBgSubtractor.cpp \
         AnalizadorFrames.cpp \
-        AnalizadorVideo.cpp \
+        AnalizadorSegmentacionFijo.cpp \
+        Test.cpp \
         main.cpp \
         mainwindow.cpp
 
@@ -36,7 +37,8 @@ HEADERS += \
         Analizador.h \
         AnalizadorBgSubtractor.h \
         AnalizadorFrames.h \
-        AnalizadorVideo.h \
+        AnalizadorSegmentacionFijo.h \
+        Test.h \
         mainwindow.h
 
 FORMS += \

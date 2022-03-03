@@ -23,7 +23,7 @@ public:
     AnalizadorFrames():
         _umbralizado(UMBRALIZADO_DF),
         _contraste(CONTRASTE_DF),
-        _mostrar(false)
+        _ejemplo(false)
     {}
 
     void analizar_2_frames();
@@ -42,7 +42,8 @@ public:
 private:
     Umbralizado _umbralizado;
     double _contraste;
-    bool _mostrar;
+    bool _ejemplo;
+    int _i;
 
     void analizar_frame(std::string name);
     void mostrar_frame(const cv::Mat &frame, const std::string &name) override;

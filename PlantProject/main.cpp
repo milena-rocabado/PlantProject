@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include <QApplication>
 #include "Analizador.h"
+#include <Test.h>
 
 int main(int argc, char *argv[])
 {

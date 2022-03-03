@@ -3,7 +3,7 @@
 
 #include <QFileDialog>
 #include <QDebug>
-#include "AnalizadorVideo.h"
+#include "AnalizadorSegmentacionFijo.h"
 #include "AnalizadorFrames.h"
 #include "AnalizadorBgSubtractor.h"
 
@@ -15,7 +15,6 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     initialize();
-    //signalsAndSlots();
 }
 //-----------------------------------------------------------------
 MainWindow::~MainWindow()
@@ -38,9 +37,9 @@ void MainWindow::initialize()
     ui->spnUmbContraste->setValue(AnalizadorFrames::CONTRASTE_DF);
     ui->cboUmbr->setCurrentIndex(0);
 
-    ui->spnSegmContraste->setValue(AnalizadorVideo::CONTRASTE_DF);
-    ui->spnNum->setValue(AnalizadorVideo::NUM_FRAMES_DF);
-    ui->spnSpace->setValue(AnalizadorVideo::ESPACIADO_DF);
+    ui->spnSegmContraste->setValue(AnalizadorSegmentacionFijo::CONTRASTE_DF);
+    ui->spnNum->setValue(AnalizadorSegmentacionFijo::NUM_FRAMES_DF);
+    ui->spnSpace->setValue(AnalizadorSegmentacionFijo::ESPACIADO_DF);
 
     ui->spnNum->setEnabled(false);
     ui->spnSpace->setEnabled(false);
@@ -86,7 +85,9 @@ void MainWindow::on_pbEjecutar_clicked()
     }
 
     if (set_file()) {
-        a->analizar_video();
+        //a->analizar_video();
+        AnalizadorSegmentacionFijo *analizador = dynamic_cast<AnalizadorSegmentacionFijo *>(a);
+        analizador->analizar_2_frames();
     }
 }
 //-----------------------------------------------------------------
@@ -132,7 +133,8 @@ void MainWindow::crear_analizador_frames()
     bool mostrar = ui->chkEjem->isChecked();
 
     analizador->set_umbralizado(umb);
-    qDebug() << "\tUmbralizado: " << umb;
+    qDebug() << "\tUmbralizado: "
+             << QString::fromStdString(AnalizadorFrames::umbralizado_to_string(umb));
     analizador->set_contraste(contraste);
     qDebug() << "\tContraste: " << contraste;
     analizador->set_mostrar(mostrar);
@@ -142,16 +144,19 @@ void MainWindow::crear_analizador_frames()
 void MainWindow::crear_analizador_video()
 {
     qDebug() << "AnalizadorVideo";
-    a = new AnalizadorVideo();
-    AnalizadorVideo *analizador = dynamic_cast<AnalizadorVideo *>(a);
+    a = new AnalizadorSegmentacionFijo();
+    AnalizadorSegmentacionFijo *analizador = dynamic_cast<AnalizadorSegmentacionFijo *>(a);
 
     bool adp = ui->chkAdaptativo->checkState() == Qt::CheckState::Checked;
     double contraste = spanish->toDouble(ui->spnSegmContraste->text());
+    int blur = ui->spnGauss->text().toInt();
 
     analizador->set_adaptativo(adp);
     qDebug() << "\tModelo adaptativo: " << adp;
     analizador->set_contraste(contraste);
     qDebug() << "\tContraste: " << contraste;
+    analizador->set_blur(blur);
+    qDebug() << "\tSuavizado: " << blur;
 
     if (adp) {
         int num = ui->spnNum->text().toInt();

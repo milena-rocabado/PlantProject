@@ -5,15 +5,16 @@ import numpy as np
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Uso: " + sys.argv[0] + " ruta_imagen")
+    if len(sys.argv) < 3:
+        print("Uso: " + sys.argv[0] + " ruta_imagen" + "pos_vertical_line")
         return
 
+    line = sys.argv[2]
     image = skimage.io.imread(fname=sys.argv[1]) #, as_gray=True)
     plt.hist(image.flatten(), bins=128, range=[0,255], color='black')
 
-    plt.axvline(x=132.526)
-    plt.gca().set_ylim(0, 350000)
+    # plt.axvline(x=line)
+    # plt.gca().set_ylim(0, 250000)# 350000)
     plt.gca().get_yaxis().set_visible(False)
     plt.show()
 
