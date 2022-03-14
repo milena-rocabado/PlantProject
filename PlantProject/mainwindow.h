@@ -2,7 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "Analizador.h"
+#include "Segmentator.h"
+#include "StaticModelSegmentator.h"
 
 namespace Ui {
 class MainWindow;
@@ -19,20 +20,33 @@ public:
 private slots:
     void on_pbEjecutar_clicked();
     void on_pbExaminar_clicked();
-    void on_chkAdaptativo_stateChanged(int state);
+
+    void on_cboFijoConf_currentIndexChanged(int index);
+
+    void on_chkDebug_stateChanged(int arg1);
 
 private:
+    class PrivateData;
+
     Ui::MainWindow *ui;
-    Analizador *a;
+    Segmentator *a;
     QLocale *spanish;
+    PrivateData *p;
 
     void initialize();
     void signalsAndSlots();
-    void set_working_directory();
+
     bool set_file();
-    void crear_analizador_frames();
-    void crear_analizador_video();
-    void crear_analizador_bgS();
+
+    void init_tabGlobal();
+    void init_tabSegmF();
+    void init_tabSegmA();
+    void init_tabBgS();
+
+    void crear_analizadorGlobal();
+    void crear_analizadorSegmF();
+    void crear_analizadorSegmA();
+    void crear_analizadorBgS();
 };
 
 #endif // MAINWINDOW_H

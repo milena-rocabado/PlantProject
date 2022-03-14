@@ -1,14 +1,20 @@
 #ifndef TEST_H
 #define TEST_H
 
-#include <Analizador.h>
+#include <Segmentator.h>
 
-class Test : public Analizador
+class Test : public Segmentator
 {
 public:
     Test();
 
     void crop_test();
+    void show_frames();
+    void variations();
+    void variations_2();
+    void breakpoint_increment();
+
+    void process_video() {}
 
 };
 

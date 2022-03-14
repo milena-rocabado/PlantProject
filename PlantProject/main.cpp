@@ -1,7 +1,9 @@
 #include "mainwindow.h"
 #include <QApplication>
-#include "Analizador.h"
+
+#include "Segmentator.h"
 #include <Test.h>
+#include <AdaptiveModelSegmentator.h>
 
 int main(int argc, char *argv[])
 {

@@ -25,26 +25,29 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
-        Analizador.cpp \
-        AnalizadorBgSubtractor.cpp \
-        AnalizadorFrames.cpp \
-        AnalizadorSegmentacionFijo.cpp \
+        ./Segmentator/AdaptiveModelSegmentator.cpp \
+        ./Segmentator/BgSubtractorSegmentator.cpp \
+        ./Segmentator/GlobalSegmentator.cpp \
+        ./Segmentator/Segmentator.cpp \
+        ./Segmentator/StaticModelSegmentator.cpp \
         Test.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
-        Analizador.h \
-        AnalizadorBgSubtractor.h \
-        AnalizadorFrames.h \
-        AnalizadorSegmentacionFijo.h \
+        ./Segmentator/AdaptiveModelSegmentator.h \
+        ./Segmentator/BgSubtractorSegmentator.h \
+        ./Segmentator/GlobalSegmentator.h \
+        ./Segmentator/Segmentator.h \
+        ./Segmentator/StaticModelSegmentator.h \
         Test.h \
         mainwindow.h
 
 FORMS += \
         mainwindow.ui
 
-INCLUDEPATH += "C:\OpenCV\OpenCV4.1.1G\include"
+INCLUDEPATH += "C:\OpenCV\OpenCV4.1.1G\include" \
+               ./Segmentator
 
 LIBS += -L"C:\OpenCV\OpenCV4.1.1G\lib"\
  -llibopencv_world411

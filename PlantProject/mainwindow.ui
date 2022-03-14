@@ -21,30 +21,20 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="elideMode">
        <enum>Qt::ElideNone</enum>
       </property>
       <widget class="QWidget" name="tabUmbr">
        <attribute name="title">
-        <string>Umbralización</string>
+        <string>Global</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout">
         <item row="1" column="0">
          <widget class="QLabel" name="lblContraste">
           <property name="text">
            <string>Contraste:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QComboBox" name="cboUmbr"/>
-        </item>
-        <item row="3" column="1">
-         <widget class="QCheckBox" name="chkEjem">
-          <property name="text">
-           <string>Mostrar ejemplos</string>
           </property>
          </widget>
         </item>
@@ -61,6 +51,9 @@
           </property>
          </spacer>
         </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="spnGlobalContraste"/>
+        </item>
         <item row="0" column="0">
          <widget class="QLabel" name="lblUmbr">
           <property name="text">
@@ -68,66 +61,17 @@
           </property>
          </widget>
         </item>
-        <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="spnUmbContraste"/>
+        <item row="0" column="1">
+         <widget class="QComboBox" name="cboGlobalUmbr"/>
         </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tabSegm">
        <attribute name="title">
-        <string>Segmentación fondo</string>
+        <string>Modelo fijo</string>
        </attribute>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="2">
-         <widget class="QCheckBox" name="chkAdaptativo">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="text">
-           <string>Modelo adaptativo</string>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="2">
-         <widget class="QDoubleSpinBox" name="spnSegmContraste"/>
-        </item>
-        <item row="0" column="1">
-         <widget class="QLabel" name="lblSegmContraste">
-          <property name="text">
-           <string>Contraste:</string>
-          </property>
-         </widget>
-        </item>
-        <item row="3" column="1" colspan="2">
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>Configuración modelo</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_3">
-           <item row="1" column="0">
-            <widget class="QLabel" name="label">
-             <property name="text">
-              <string>Espciado entre frames:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QSpinBox" name="spnNum"/>
-           </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="lblNum">
-             <property name="text">
-              <string>Número de frames:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QSpinBox" name="spnSpace"/>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="4" column="2">
+        <item row="2" column="2">
          <spacer name="spacerSegm">
           <property name="orientation">
            <enum>Qt::Vertical</enum>
@@ -140,15 +84,84 @@
           </property>
          </spacer>
         </item>
-        <item row="2" column="1">
-         <widget class="QLabel" name="label_2">
+        <item row="1" column="1" colspan="2">
+         <widget class="QGroupBox" name="groupBox">
+          <property name="title">
+           <string/>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_6">
+           <item row="1" column="0">
+            <widget class="QLabel" name="lblSegmContraste">
+             <property name="text">
+              <string>Contraste:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QDoubleSpinBox" name="spnFijoUmbral"/>
+           </item>
+           <item row="1" column="2">
+            <widget class="QDoubleSpinBox" name="spnFijoContraste"/>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Umbral:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Modelo:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QComboBox" name="cboFijoModelo"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="1">
+         <widget class="QLabel" name="label_4">
           <property name="text">
-           <string>Suavizado Gaussiano:</string>
+           <string>Configuración:</string>
           </property>
          </widget>
         </item>
-        <item row="2" column="2">
-         <widget class="QSpinBox" name="spnGauss"/>
+        <item row="0" column="2">
+         <widget class="QComboBox" name="cboFijoConf"/>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tabSegmA">
+       <attribute name="title">
+        <string>Modelo Adaptativo</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_4">
+        <item row="0" column="1">
+         <widget class="QDoubleSpinBox" name="spnAdapContraste"/>
+        </item>
+        <item row="0" column="0">
+         <widget class="QLabel" name="label_3">
+          <property name="text">
+           <string>Contraste:</string>
+          </property>
+         </widget>
+        </item>
+        <item row="1" column="1">
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
@@ -158,7 +171,7 @@
        </attribute>
        <layout class="QGridLayout" name="gridLayout_5">
         <item row="0" column="1">
-         <widget class="QComboBox" name="cboAlg"/>
+         <widget class="QComboBox" name="cboBgSAlg"/>
         </item>
         <item row="0" column="0">
          <widget class="QLabel" name="lblAlg">
@@ -185,42 +198,76 @@
      </widget>
     </item>
     <item>
-     <widget class="QFrame" name="frame">
-      <property name="autoFillBackground">
-       <bool>true</bool>
+     <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <item>
+       <widget class="QLabel" name="lblVideo">
+        <property name="text">
+         <string>Video:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLineEdit" name="lneVideoPath"/>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pbExaminar">
+        <property name="text">
+         <string>Examinar</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout">
+      <item>
+       <spacer name="horizontalSpacer">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>Debug:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="chkDebug">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_6">
+        <property name="text">
+         <string>Time:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="chkTime">
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QPushButton" name="pbEjecutar">
+      <property name="text">
+       <string>Ejecutar</string>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
-      </property>
-      <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_4">
-       <item row="1" column="0" colspan="3">
-        <widget class="QPushButton" name="pbEjecutar">
-         <property name="text">
-          <string>Ejecutar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="lblVideo">
-         <property name="text">
-          <string>Video:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="2">
-        <widget class="QPushButton" name="pbExaminar">
-         <property name="text">
-          <string>Examinar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1">
-        <widget class="QLineEdit" name="lneVideoPath"/>
-       </item>
-      </layout>
      </widget>
     </item>
    </layout>
