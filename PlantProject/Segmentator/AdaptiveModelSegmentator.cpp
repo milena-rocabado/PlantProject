@@ -109,16 +109,10 @@ void AdaptiveModelSegmentator::process_frame() {
 
     Mat diferencia(_frame.size(), CV_8U);
 
-    qDebug() << "analizar_frame: computing difference";
-    cout << "\tnight model type: " << typeToString(_night_model.type()) << endl;
-    cout << "\tnight model size: " << _night_model.size() << endl;
-    cout << "\tframe type: " << typeToString(_frame.type()) << endl;
-    cout << "\tframe size: " << _frame.size() << endl;
     if (_night)
         diferencia = _night_model - _frame;
     else
         diferencia = _day_model - _frame;
-    qDebug() << "analizar_frame: done computing";
 
     if (_ejemplo) {
         show_frame(diferencia, to_string(_pos) + "-dif");
@@ -131,14 +125,14 @@ void AdaptiveModelSegmentator::process_frame() {
         if (_ejemplo) show_frame(diferencia, to_string(_pos) + "-dif-cont");
     }
 
-    threshold(diferencia, _resultado, 65.0, 255.0, THRESH_BINARY);
+    threshold(diferencia, _output, 65.0, 255.0, THRESH_BINARY);
     if (_ejemplo) {
-        show_frame(_resultado, to_string(_pos) + "-mask");
-        save_image(_resultado, "segmA", to_string(_pos) + "-mask");
+        show_frame(_output, to_string(_pos) + "-mask");
+        save_image(_output, "segmA", to_string(_pos) + "-mask");
         qDebug() << "analizar_frame: mask computed";
     }
 
-    _file << mean(_resultado)[0];
+    _file << mean(_output)[0];
 }
 // -------------------------------------------------------------------
 void AdaptiveModelSegmentator::process_2_frames() {
@@ -178,11 +172,11 @@ void AdaptiveModelSegmentator::iterarate_thresh() {
     double start = 1., end = 80., increment = 20.;
     for (double i = start; i < end; i += increment)
     {
-        threshold(diferencia, _resultado, i, 255.0, THRESH_BINARY);
-        save_image(_resultado, "segmA/umb", to_string(_pos) + "-mask-" + to_string(i));
+        threshold(diferencia, _output, i, 255.0, THRESH_BINARY);
+        save_image(_output, "segmA/umb", to_string(_pos) + "-mask-" + to_string(i));
         qDebug() << "calcular_mascara: mask computed thr =" << i;
     }
-    double thr = threshold(diferencia, _resultado, 0., 255., THRESH_OTSU);
-    save_image(_resultado, "segmA/umb", to_string(_pos) + "-mask-otsu");
+    double thr = threshold(diferencia, _output, 0., 255., THRESH_OTSU);
+    save_image(_output, "segmA/umb", to_string(_pos) + "-mask-otsu");
     qDebug() << "calcular_mascara: mask computed thr =" << thr;
 }

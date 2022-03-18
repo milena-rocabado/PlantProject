@@ -12,24 +12,17 @@ const std::map<GlobalSegmentator::ThreshType, double (*)(const Mat&, Mat&)> Glob
         { GlobalSegmentator::Otsu,             &GlobalSegmentator::umbral_otsu }
 };
 
-GlobalSegmentator::ThreshType GlobalSegmentator::umbralizado() {
-    return _threshType;
+GlobalSegmentator::ThreshType GlobalSegmentator::thresh_type() const {
+    return _conf.thresh_type;
 }
 // -------------------------------------------------------------------
-double GlobalSegmentator::contraste() {
-    return _alpha;
-}
-// -------------------------------------------------------------------
-void GlobalSegmentator::set_threshType(const ThreshType &umbralizado) {
-    _threshType = umbralizado;
-}
-// -------------------------------------------------------------------
-void GlobalSegmentator::set_alpha(const double &contraste) {
-    _alpha = contraste;
+double GlobalSegmentator::alpha() const {
+    return _conf.alpha;
 }
 // -------------------------------------------------------------------
 bool GlobalSegmentator::set_video(const string& path) {
-    return Segmentator::set_video(path, false, _threshType == Otsu);
+    return Segmentator::set_video(path, false,
+                                  _conf.thresh_type == Otsu || _conf.thresh_type == Medio);
 }
 // -------------------------------------------------------------------
 void GlobalSegmentator::process_2_frames() {
@@ -38,12 +31,14 @@ void GlobalSegmentator::process_2_frames() {
     _ejemplo = true;
 
     // frame de noche
-    _video.set(CAP_PROP_POS_FRAMES, DAY_SAMPLE_POS);
+    _pos = NIGHT_SAMPLE_POS;
+    _video.set(CAP_PROP_POS_FRAMES, _pos);
     _video >> _frame;
     process_frame();
 
     // frame de dia
-    _video.set(CAP_PROP_POS_FRAMES, NIGHT_SAMPLE_POS);
+    _pos = DAY_SAMPLE_POS;
+    _video.set(CAP_PROP_POS_FRAMES, _pos);
     _video >> _frame;
     process_frame();
 
@@ -60,11 +55,13 @@ void GlobalSegmentator::process_frame() {
     }
 
     umbralizar();
+    invert(_output);
 
     if (_ejemplo) {
-        save_image(_frame, "umbr", to_string(_pos) + "-mask");
+        save_image(_output, "umbr", to_string(_pos) + "-mask");
         qDebug() << "analizar_frame: threshold applied";
     }
+
 }
 // -------------------------------------------------------------------
 void GlobalSegmentator::show_frame(const Mat &frame, const string &name) {
@@ -81,18 +78,18 @@ void GlobalSegmentator::preprocesar() {
     if (_ejemplo) qDebug() << "preprocesar: to grayscale";
 
     // Aumentar contraste
-    _frame *= _alpha;
+    _frame *= _conf.alpha;
     if (_ejemplo) qDebug() << "preprocesar: contrast fix alpha ="
-                           << _alpha;
+                           << _conf.alpha;
 }
 // -------------------------------------------------------------------
 // -------------------------- UMBRALIZADO ----------------------------
 // -------------------------------------------------------------------
 void GlobalSegmentator::umbralizar() {
-    double thr = umbrs.at(_threshType)(_frame, _resultado);
+    double thr = umbrs.at(_conf.thresh_type)(_frame, _output);
 
-    if (_ejemplo && _threshType != AdaptativoMedia
-                 && _threshType != AdaptativoGauss)
+    if (_ejemplo && (_conf.thresh_type == Medio
+                     || _conf.thresh_type == Otsu))
         qDebug() << "umbralizar: thr =" << thr;
 }
 // -------------------------------------------------------------------
@@ -105,16 +102,12 @@ double GlobalSegmentator::umbral_fijo(const Mat &src, Mat &dst) {
 double GlobalSegmentator::umbral_medio(const Mat &src, Mat &dst) {
     double minVal, maxVal;
 
-    // Máscara para descartar el texto inferior
-    Mat mask(src.size(), CV_8UC1, Scalar(0));
-    Rect rec(0, 0, src.size().width, 645);
-    rectangle(mask, rec, Scalar(255), FILLED);
+    crop_time_bar(src, dst);
 
-    // Calcular umbral como media entre valores máximo mínimo de gris
-    minMaxLoc(src, &minVal, &maxVal, nullptr, nullptr, mask);
+    minMaxLoc(dst, &minVal, &maxVal);
     double thr = (maxVal + minVal) / 2;
 
-    threshold(src, dst, thr, 255, THRESH_BINARY);
+    threshold(dst, dst, thr, 255, THRESH_BINARY);
     return thr;
 }
 // -------------------------------------------------------------------

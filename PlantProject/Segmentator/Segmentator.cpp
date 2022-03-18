@@ -89,12 +89,19 @@ void Segmentator::process_video() {
 
         process_frame();
 
-        _salida << _resultado;
+        _salida << _output;
     }
     qDebug() << "analizar_video: END total =" << _pos - 1 << "frames";
 
     _video.release();
     _salida.release();
+}
+// -------------------------------------------------------------------
+void Segmentator::process_frame(const Mat &frame, Mat &output) {
+    _frame = frame;
+    process_frame();
+    output = _output;
+    _pos++;
 }
 // ------------------------------------------------------------------
 void Segmentator::show_video() {
@@ -172,11 +179,11 @@ void Segmentator::crop_time_bar(const Mat &src, Mat &dst) {
     dst = src(roi);
 }
 // -------------------------------------------------------------------
-void Segmentator::abrir(Mat &img) {
-    Mat kernel = getStructuringElement(MORPH_RECT, Size(3, 3));
+void Segmentator::open(Mat &img) {
+    Mat kernel = getStructuringElement(MORPH_CROSS, Size(3, 3));
     morphologyEx(img, img, MORPH_OPEN, kernel);
 }
 // -------------------------------------------------------------------
-void Segmentator::invertir(Mat &img) {
+void Segmentator::invert(Mat &img) {
     img = 255 - img;
 }

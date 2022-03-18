@@ -2,7 +2,7 @@
 #include <QApplication>
 
 #include "Segmentator.h"
-#include <Test.h>
+#include <TestSegmentator.h>
 #include <AdaptiveModelSegmentator.h>
 
 int main(int argc, char *argv[])

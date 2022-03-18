@@ -30,7 +30,9 @@ SOURCES += \
         ./Segmentator/GlobalSegmentator.cpp \
         ./Segmentator/Segmentator.cpp \
         ./Segmentator/StaticModelSegmentator.cpp \
-        Test.cpp \
+        Analyzer/Analyzer.cpp \
+        Calculator/Calculator.cpp \
+        Test/TestSegmentator.cpp \
         main.cpp \
         mainwindow.cpp
 
@@ -40,14 +42,19 @@ HEADERS += \
         ./Segmentator/GlobalSegmentator.h \
         ./Segmentator/Segmentator.h \
         ./Segmentator/StaticModelSegmentator.h \
-        Test.h \
+        Analyzer/Analyzer.h \
+        Calculator/Calculator.h \
+        Test/TestSegmentator.h \
         mainwindow.h
 
 FORMS += \
         mainwindow.ui
 
 INCLUDEPATH += "C:\OpenCV\OpenCV4.1.1G\include" \
-               ./Segmentator
+               ./Segmentator \
+               ./Analyzer \
+               ./Test \
+               ./Calculator
 
 LIBS += -L"C:\OpenCV\OpenCV4.1.1G\lib"\
  -llibopencv_world411

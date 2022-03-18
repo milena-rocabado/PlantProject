@@ -17,24 +17,28 @@ public:
         Otsu
     };
 
-    static constexpr double ALPHA_DF = 2.0;
-    static constexpr ThreshType THRESHTYPE_DF = ThreshType::Fijo;
+    typedef struct {
+        ThreshType thresh_type;
+        double alpha;
+    } Configuracion;
+
+    static constexpr Configuracion CONF_DF = { Fijo, 2.0 };
 
     GlobalSegmentator():
-        _threshType(THRESHTYPE_DF),
-        _alpha(ALPHA_DF)
+        _conf(CONF_DF)
     {}
+
+    GlobalSegmentator(const ThreshType &type, const double &alpha):
+        _conf({type, alpha})
+    {}
+
+    ThreshType thresh_type() const;
+    double alpha() const;
 
     bool set_video(const std::string& path) override;
     void set_up() override {}
     void process_video();
     void process_debug() override { process_2_frames(); }
-
-    ThreshType umbralizado();
-    double contraste();
-
-    void set_threshType(const ThreshType &);
-    void set_alpha(const double &);
 
     static std::string umbralizado_to_str(ThreshType u) {
         switch (u) {
@@ -46,14 +50,14 @@ public:
         }
         return "Invalid enum";
     }
-
-private:
-    ThreshType _threshType;
-    double _alpha;
-
-    void process_2_frames();
+protected:
     void process_frame() override;
     void show_frame(const cv::Mat &frame, const std::string &name) override;
+
+private:
+    Configuracion _conf;
+
+    void process_2_frames();
 
     // PREPROCESADO
     void preprocesar();
@@ -68,10 +72,6 @@ private:
     static double umbral_adaptativo_media(const cv::Mat &src, cv::Mat &dst);
     static double umbral_adaptativo_gauss(const cv::Mat &src, cv::Mat &dst);
     static double umbral_otsu(const cv::Mat &src, cv::Mat &dst);
-
-    // MORFOLOGÍA
-    void invertir();
-    void abrir();
 };
 
 #endif // ANALIZADORFRAMES_H

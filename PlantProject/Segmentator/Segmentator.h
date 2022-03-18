@@ -14,6 +14,11 @@ public:
 
     static constexpr int BAR_HEIGHT = 20;
 
+    Segmentator()
+        : _pos(0)
+        , _ejemplo(false)
+    {}
+
     virtual bool set_video(const std::string& path);
     void show_video();
 
@@ -22,7 +27,7 @@ public:
     virtual void process_debug() = 0;
 
     virtual void set_up() = 0;
-    virtual void process_frame() = 0;
+    void process_frame(const cv::Mat &frame, cv::Mat &output);
 
     virtual ~Segmentator();
 
@@ -33,7 +38,7 @@ protected:
     cv::VideoCapture _video;
     cv::VideoWriter _salida;
     cv::Mat _frame;
-    cv::Mat _resultado;
+    cv::Mat _output;
     std::string _wd;
 
     bool _ejemplo;
@@ -42,6 +47,7 @@ protected:
     bool open_video_writer(cv::VideoWriter &, const std::string &file, const bool &isColor, const bool &isCropped);
     std::string outfilename(const std::string &filename, const std::string &suffix);
 
+    virtual void process_frame() = 0;
     virtual void show_frame(const cv::Mat &frame, const std::string &name);
     void save_image(const cv::Mat &im, const std::string &dir, const std::string &filename);
     void save_image(const cv::Mat &im, const std::string &filename);
@@ -49,8 +55,8 @@ protected:
     static void apply_mask(const cv::Mat &img, const cv::Mat &mask, cv::Mat &dst);
     static void crop_time_bar(cv::Mat &);
     static void crop_time_bar(const cv::Mat &src, cv::Mat &dst);
-    static void abrir(cv::Mat &);
-    static void invertir(cv::Mat &);
+    static void open(cv::Mat &);
+    static void invert(cv::Mat &);
 
 private:
     std::chrono::high_resolution_clock::time_point _start;

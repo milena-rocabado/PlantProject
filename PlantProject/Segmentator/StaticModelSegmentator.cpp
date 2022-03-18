@@ -30,11 +30,15 @@ void StaticModelSegmentator::process_2_frames() {
     qDebug() << "analizar_2_frames: loaded night frame";
     process_frame();
 
+    save_image(_output, "night");
+
     _video.set(CAP_PROP_POS_FRAMES, DAY_SAMPLE_POS);
     _video >> _frame;
     _pos = DAY_SAMPLE_POS;
     qDebug() << "analizar_2_frames: loaded day frame";
     process_frame();
+
+    save_image(_output, "day");
 
     qDebug() << "analizar_2_frames: done.";
 }
@@ -102,7 +106,8 @@ void StaticModelSegmentator::process_frame() {
         diferencia *= _conf.alpha;
     }
 
-    threshold(diferencia, _resultado, _conf.thresh, 255.0, THRESH_BINARY);
+    threshold(diferencia, _output, _conf.thresh, 255.0, THRESH_BINARY);
+    open(_output);
 }
 // ------------------------------------------------------------------
 void StaticModelSegmentator::iterate_alpha() {
@@ -118,9 +123,9 @@ void StaticModelSegmentator::iterate_alpha() {
     qDebug() << "iterar_contrastes: dif computed";
     save_image(dif, "segm/contraste", to_string(_pos) + "-dif-a" + to_string(1.0));
 
-    double thr = threshold(dif, _resultado, 0, 255.0, cv::THRESH_OTSU);
+    double thr = threshold(dif, _output, 0, 255.0, cv::THRESH_OTSU);
     qDebug() << "iterar_contrastes: umbral =" << thr << "a =" << 1.0;
-    save_image(_resultado, "segm/contraste", to_string(_pos) + "-mask-a" + to_string(1.0));
+    save_image(_output, "segm/contraste", to_string(_pos) + "-mask-a" + to_string(1.0));
 
     for (double i = 1.5; i <= 4.0; i += 0.5) {
         con_dif = dif * i;
@@ -129,9 +134,9 @@ void StaticModelSegmentator::iterate_alpha() {
         save_image(con_dif, "segm/contraste", to_string(_pos) + "-dif-a" + to_string(i));
 
         double thr = 80.0;
-        threshold(con_dif, _resultado, thr, 255, THRESH_BINARY);
+        threshold(con_dif, _output, thr, 255, THRESH_BINARY);
         qDebug() << "iterar_contrastes: umbral =" << thr << "a =" << i;
-        save_image(_resultado, "segm/contraste", to_string(_pos) + "-mask-a" + to_string(i));
+        save_image(_output, "segm/contraste", to_string(_pos) + "-mask-a" + to_string(i));
     }
 }
 // ------------------------------------------------------------------
@@ -147,16 +152,16 @@ void StaticModelSegmentator::iterate_blur() {
     qDebug() << "iterar_blur: dif computed";
     save_image(dif, "segm/blur", to_string(_pos) + "-dif");
 
-    double thr = threshold(dif, _resultado, 0, 255.0, cv::THRESH_OTSU);
+    double thr = threshold(dif, _output, 0, 255.0, cv::THRESH_OTSU);
     qDebug() << "iterar_blur: umbral = " << thr << "kernel = " << 0;
-    save_image(_resultado, "segm/blur", to_string(_pos) + "-noblur");
+    save_image(_output, "segm/blur", to_string(_pos) + "-noblur");
 
     for (int i = 3; i <= 15; i+=4) {
         GaussianBlur(dif, blurred_dif, Size(i, i), 0);
-        double thr = threshold(blurred_dif, _resultado, 0, 255.0, cv::THRESH_OTSU);
+        double thr = threshold(blurred_dif, _output, 0, 255.0, cv::THRESH_OTSU);
 
         qDebug() << "iterar_blur: umbral = " << thr << "kernel = " << i;
-        save_image(_resultado, "segm/blur", to_string(_pos) + "-blur" + to_string(i));
+        save_image(_output, "segm/blur", to_string(_pos) + "-blur" + to_string(i));
     }
 }
 // ------------------------------------------------------------------
@@ -174,8 +179,8 @@ void StaticModelSegmentator::iterate_thresh() {
     dif *= _conf.alpha;
     for (int i = 60; i <= 120; i+=10) {
         double thr = i;
-        threshold(dif, _resultado, thr, 255, THRESH_BINARY);
+        threshold(dif, _output, thr, 255, THRESH_BINARY);
         qDebug() << "iterar_blur: umbral =" << i;
-        save_image(_resultado, "segm/thr", to_string(_pos) + "-thr" + to_string(i));
+        save_image(_output, "segm/thr", to_string(_pos) + "-thr" + to_string(i));
     }
 }

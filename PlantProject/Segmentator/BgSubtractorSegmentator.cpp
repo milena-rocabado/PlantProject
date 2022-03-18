@@ -44,7 +44,7 @@ void BgSubtractorSegemntator::set_up() {
 }
 // -------------------------------------------------------------------
 void BgSubtractorSegemntator::process_frame() {
-    _bgSub->apply(_frame, _resultado, -1.);
+    _bgSub->apply(_frame, _output, -1.);
     _bgSub->getBackgroundImage(_model);
     _model_out << _model;
 }

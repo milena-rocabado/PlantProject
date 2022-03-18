@@ -69,15 +69,15 @@ void MainWindow::init_tabGlobal() {
         ui->cboGlobalUmbr->addItem(QString::fromStdString
                                    (GlobalSegmentator::umbralizado_to_str(umb)));
     }
-    ui->spnGlobalContraste->setValue(GlobalSegmentator::ALPHA_DF);
+    ui->spnGlobalContraste->setValue(GlobalSegmentator::CONF_DF.alpha);
     ui->spnGlobalContraste->setMinimum(1.0);
-    ui->cboGlobalUmbr->setCurrentIndex(GlobalSegmentator::THRESHTYPE_DF);
+    ui->cboGlobalUmbr->setCurrentIndex(GlobalSegmentator::CONF_DF.thresh_type);
 }
 //-----------------------------------------------------------------
 void MainWindow::init_tabSegmF() {
     p->fijoConfs[Personalizada].name = "Personalizada";
     for (auto pair: p->fijoConfs) {
-        ui->cboFijoConf->addItem(pair.second.nombre);
+        ui->cboFijoConf->addItem(pair.second.name);
     }
     ui->cboFijoConf->setCurrentIndex(0);
 
@@ -161,17 +161,15 @@ void MainWindow::on_chkDebug_stateChanged(int arg1) {
 //-----------------------------------------------------------------
 void MainWindow::crear_analizadorGlobal() {
     qDebug() << "AnalizadorFrames";
-    a = new GlobalSegmentator;
-    GlobalSegmentator *analizador = dynamic_cast<GlobalSegmentator *>(a);
 
     GlobalSegmentator::ThreshType umb = static_cast<GlobalSegmentator::ThreshType>(ui->cboGlobalUmbr->currentIndex());
     double contraste = spanish->toDouble(ui->spnGlobalContraste->text());
 
-    analizador->set_threshType(umb);
     qDebug() << "\tUmbralizado: "
              << QString::fromStdString(GlobalSegmentator::umbralizado_to_str(umb));
-    analizador->set_alpha(contraste);
     qDebug() << "\tContraste: " << contraste;
+
+    a = new GlobalSegmentator(umb, contraste);
 }
 //-----------------------------------------------------------------
 void MainWindow::crear_analizadorSegmF() {

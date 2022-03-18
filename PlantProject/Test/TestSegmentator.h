@@ -3,10 +3,10 @@
 
 #include <Segmentator.h>
 
-class Test : public Segmentator
+class TestSegmentator : public Segmentator
 {
 public:
-    Test();
+    TestSegmentator();
 
     void crop_test();
     void show_frames();
@@ -17,5 +17,7 @@ public:
     void process_video() {}
 
 };
+
+void test_outside_loop();
 
 #endif // TEST_H

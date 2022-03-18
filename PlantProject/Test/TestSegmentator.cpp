@@ -1,23 +1,25 @@
-#include "Test.h"
-#include <StaticModelSegmentator.h>
+#include "TestSegmentator.h"
 #include <QDebug>
+
+#include <StaticModelSegmentator.h>
+#include <GlobalSegmentator.h>
 
 using namespace cv;
 using namespace std;
 
-Test::Test()
+TestSegmentator::TestSegmentator()
 {
 
 }
 //----------------------------------------------------------
-void Test::crop_test() {
+void TestSegmentator::crop_test() {
     Mat img = imread("C:/Users/milena/git/PlantProject/Media/imagen-media.png");
     imshow("original", img);
     crop_time_bar(img);
     imshow("cropped", img);
 }
 //----------------------------------------------------------
-void Test::show_frames() {
+void TestSegmentator::show_frames() {
     VideoCapture video;
     Mat frame;
     int start = 3270;
@@ -38,7 +40,7 @@ void Test::show_frames() {
     }
 }
 //----------------------------------------------------------
-void Test::variations() {
+void TestSegmentator::variations() {
      VideoCapture video;
      Mat frame;
      vector<int> v;
@@ -74,7 +76,7 @@ void Test::variations() {
      cout << "done." << endl;
 }
 //----------------------------------------------------------
-void Test::variations_2() {
+void TestSegmentator::variations_2() {
     VideoCapture video("C:/Users/milena/git/PlantProject/Media"
                        "/climbing_bean_project3_leaf_folding.AVI");
     Mat frame;
@@ -136,7 +138,7 @@ void Test::variations_2() {
     qDebug() << "variations_2: alg done.";
 }
 //----------------------------------------------------------
-void Test::breakpoint_increment() {
+void TestSegmentator::breakpoint_increment() {
     int DN_BREAKPOINTS[] = { 0, 436, 1395, 1877, 2836, 3314 };
     VideoCapture video("C:/Users/milena/git/PlantProject/Media"
                        "/climbing_bean_project3_leaf_folding.AVI");
@@ -162,4 +164,35 @@ void Test::breakpoint_increment() {
 
         cout << "--------" << endl;
     }
+}
+void test_outside_loop() {
+   Segmentator *segm;
+   Mat frame, output;
+   bool mostrar;
+   VideoCapture video("C:/Users/milena/git/PlantProject/Media/climbing_bean_project3_leaf_folding.AVI");
+   assert(video.isOpened());
+
+   segm = new StaticModelSegmentator();
+   assert(segm != nullptr);
+   qDebug() << "test: segmentator created";
+
+   segm->set_up();
+   qDebug() << "test: segmentator setup done";
+
+   qDebug() << "test: start loop";
+   for(int i = 0; ; i++) {
+       video >> frame;
+       if (i == 1051|| frame.empty()) break;
+
+       mostrar = i == Segmentator::NIGHT_SAMPLE_POS || i == Segmentator::DAY_SAMPLE_POS;
+
+       if (mostrar)
+           imshow("frame" + to_string(i), frame);
+
+       segm->process_frame(frame, output);
+
+       if (mostrar)
+           imshow("output" + to_string(i), output);
+   }
+   qDebug() << "test: end loop";
 }
