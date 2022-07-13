@@ -21,8 +21,7 @@ double GlobalSegmentator::alpha() const {
 }
 // -------------------------------------------------------------------
 bool GlobalSegmentator::set_video(const string& path) {
-    return Segmentator::set_video(path, false,
-                                  _conf.thresh_type == Otsu || _conf.thresh_type == Medio);
+    return Segmentator::set_video(path, false);
 }
 // -------------------------------------------------------------------
 void GlobalSegmentator::process_2_frames() {
@@ -56,12 +55,12 @@ void GlobalSegmentator::process_frame() {
 
     umbralizar();
     invert(_output);
+    crop_time_bar(_output);
 
     if (_ejemplo) {
         save_image(_output, "umbr", to_string(_pos) + "-mask");
         qDebug() << "analizar_frame: threshold applied";
     }
-
 }
 // -------------------------------------------------------------------
 void GlobalSegmentator::show_frame(const Mat &frame, const string &name) {

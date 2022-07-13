@@ -38,7 +38,7 @@ public:
 
     void set_conf(const Configuration &conf) { _conf = conf; }
 
-    void set_up() override { load_model(); }
+    void set_up() override;
     void process_debug() override { process_2_frames(); }
 
     static std::string model_to_str(const Model &modelo) {
@@ -51,13 +51,13 @@ public:
 
     static std::string conf_to_str(Configuration conf) {
         std::stringstream ss;
-        ss << conf.name << ": { modelo: " << model_to_str(conf.model)
-           << ", thresh: " << conf.thresh
-           << ", alpha: " << conf.alpha << "}";
+        ss << conf.name << ": { modelo: '" << model_to_str(conf.model)
+           << "', thresh: " << conf.thresh
+           << ", alpha: " << conf.alpha << " }";
         return ss.str();
     }
 
-    ~ StaticModelSegmentator() override;
+    ~StaticModelSegmentator() override;
 
 protected:
     void process_frame() override;

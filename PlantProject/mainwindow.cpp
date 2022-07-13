@@ -1,12 +1,15 @@
- #include "mainwindow.h"
+#include "mainwindow.h"
 #include "ui_mainwindow.h"
 
 #include <QFileDialog>
 #include <QDebug>
+
 #include "GlobalSegmentator.h"
 #include "StaticModelSegmentator.h"
 #include "BgSubtractorSegmentator.h"
 #include "AdaptiveModelSegmentator.h"
+
+#include "Analyzer.h"
 
 const StaticModelSegmentator::Configuration StaticModelSegmentator::CONF1;
 const StaticModelSegmentator::Configuration StaticModelSegmentator::CONF2;
@@ -109,7 +112,7 @@ void MainWindow::init_tabBgS() {
 //-----------------------------------------------------------------
 //------------------------------SLOTS------------------------------
 //-----------------------------------------------------------------
-void MainWindow::on_pbEjecutar_clicked() {
+void MainWindow::on_pbEjecutarSegm_clicked() {
     qDebug() << "Signal received: " << sender();
 
     if (ui->tabWidget->currentWidget() == ui->tabUmbr) {
@@ -133,6 +136,14 @@ void MainWindow::on_pbEjecutar_clicked() {
         else
             a->process_video();
     }
+
+}
+//-----------------------------------------------------------------
+void MainWindow::on_pbEjecutar_clicked()
+{
+    Analyzer a;
+    a.set_video("C:/Users/milena/git/PlantProject/Media/climbing_bean_project3_leaf_folding.AVI");
+    a.process_video();
 }
 //-----------------------------------------------------------------
 void MainWindow::on_pbExaminar_clicked() {
@@ -211,3 +222,4 @@ void MainWindow::crear_analizadorBgS() {
              << QString::fromStdString(BgSubtractorSegemntator::algorithm_to_string(alg));
     analizador->set_alg(alg);
 }
+

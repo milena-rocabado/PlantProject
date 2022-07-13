@@ -43,11 +43,17 @@ void StaticModelSegmentator::process_2_frames() {
     qDebug() << "analizar_2_frames: done.";
 }
 // ------------------------------------------------------------------
+void StaticModelSegmentator::set_up(){
+    qDebug() << "set_up: _conf " << QString::fromStdString(conf_to_str(_conf));
+    load_model();
+    _apply_contrast = static_cast<int>(trunc(_conf.alpha * 100)) != 100;
+}
+// ------------------------------------------------------------------
 void StaticModelSegmentator::load_model() {
     stringstream ss;
     ss << Segmentator::_wd << (_conf.model == Modelo1
-                              ? "modelo_fondo.png"
-                              : "modelo_noche.png");
+                                            ? "modelo_fondo.png"
+                                            : "modelo_noche.png");
     string fp = ss.str();
 
     qDebug() << "cargar_modelo: attempting to load "
@@ -102,12 +108,22 @@ void StaticModelSegmentator::process_frame() {
     cvtColor(_frame, _frame, COLOR_BGR2GRAY);
 
     diferencia = _model - _frame;
+
+    if (_pos == 3150) {
+        show_frame(diferencia, to_string(_pos) + "_dif");
+    }
+
     if (_apply_contrast) {
         diferencia *= _conf.alpha;
     }
 
     threshold(diferencia, _output, _conf.thresh, 255.0, THRESH_BINARY);
     open(_output);
+
+    if (_pos == 3150) {
+        show_frame(diferencia, to_string(_pos) + "_dif_a");
+        show_frame(_output, to_string(_pos) + "_out");
+    }
 }
 // ------------------------------------------------------------------
 void StaticModelSegmentator::iterate_alpha() {

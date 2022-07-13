@@ -1,6 +1,7 @@
 #include "TestSegmentator.h"
 #include <QDebug>
 
+#include <Analyzer.h>
 #include <StaticModelSegmentator.h>
 #include <GlobalSegmentator.h>
 
@@ -165,6 +166,7 @@ void TestSegmentator::breakpoint_increment() {
         cout << "--------" << endl;
     }
 }
+//----------------------------------------------------------
 void test_outside_loop() {
    Segmentator *segm;
    Mat frame, output;
@@ -196,3 +198,13 @@ void test_outside_loop() {
    }
    qDebug() << "test: end loop";
 }
+//----------------------------------------------------------
+void test_analyzer() {
+    Analyzer a(Analyzer::StaticModel);
+
+    a.set_video("C:/Users/milena/git/PlantProject/Media/climbing_bean_project3_leaf_folding.AVI");
+    qDebug() << "test: begin processing";
+    a.process_video();
+    qDebug() << "test: end processing";
+}
+

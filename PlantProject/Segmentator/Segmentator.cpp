@@ -18,11 +18,15 @@ Segmentator::~Segmentator() {
         _salida.release();
 }
 // ------------------------------------------------------------------
-bool Segmentator::set_video(const string &path) {
-    return Segmentator::set_video(path, false, true);
+void Segmentator::set_wd(const string &path) {
+    _wd = path;
 }
 // ------------------------------------------------------------------
-bool Segmentator::set_video(const std::string &path, const bool &isColor, const bool &isCropped) {
+bool Segmentator::set_video(const string &path) {
+    return Segmentator::set_video(path, false);
+}
+// ------------------------------------------------------------------
+bool Segmentator::set_video(const std::string &path, const bool &isColor) {
     if (! get_wd_from(path)) {
         qCritical() << "set_video: Path must be absolute";
         return false;
@@ -38,7 +42,7 @@ bool Segmentator::set_video(const std::string &path, const bool &isColor, const 
         return false;
     }
 
-    open_video_writer(_salida, outfilename(path, "_processed.avi"), isColor, isCropped);
+    open_video_writer(_salida, outfilename(path, "_processed.avi"), isColor);
     if ( !_salida.isOpened()) {
         qCritical() << "set_video: Error creating output file _salida";
         return false;
@@ -47,16 +51,15 @@ bool Segmentator::set_video(const std::string &path, const bool &isColor, const 
     return true;
 }
 // ------------------------------------------------------------------
-bool Segmentator::open_video_writer(cv::VideoWriter &writer, const std::string &file, const bool &isColor, const bool &isCropped) {
+bool Segmentator::open_video_writer(cv::VideoWriter &writer, const std::string &file, const bool &isColor) {
     if (writer.isOpened())
         writer.release();
 
-    int crop = isCropped ? 20 : 0;
     writer.open(file,
                 static_cast<int>(_video.get(CAP_PROP_FOURCC)),
                 _video.get(CAP_PROP_FPS),
                 Size(static_cast<int>(_video.get(CAP_PROP_FRAME_WIDTH)),
-                     static_cast<int>(_video.get(CAP_PROP_FRAME_HEIGHT) - crop)),
+                     static_cast<int>(_video.get(CAP_PROP_FRAME_HEIGHT) - BAR_HEIGHT)),
                 isColor);
 
     return writer.isOpened();

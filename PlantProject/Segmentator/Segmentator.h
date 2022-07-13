@@ -16,17 +16,18 @@ public:
 
     Segmentator()
         : _pos(0)
-        , _ejemplo(false)
     {}
 
     virtual bool set_video(const std::string& path);
+    void set_wd(const std::string &path);
+    virtual void set_up() = 0;
+
     void show_video();
 
     void process_timed();
     void process_video();
     virtual void process_debug() = 0;
 
-    virtual void set_up() = 0;
     void process_frame(const cv::Mat &frame, cv::Mat &output);
 
     virtual ~Segmentator();
@@ -43,8 +44,8 @@ protected:
 
     bool _ejemplo;
 
-    bool set_video(const std::string &path, const bool &isColor, const bool &isCropped);
-    bool open_video_writer(cv::VideoWriter &, const std::string &file, const bool &isColor, const bool &isCropped);
+    bool set_video(const std::string &path, const bool &isColor);
+    bool open_video_writer(cv::VideoWriter &, const std::string &file, const bool &isColor);
     std::string outfilename(const std::string &filename, const std::string &suffix);
 
     virtual void process_frame() = 0;

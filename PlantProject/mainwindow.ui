@@ -264,6 +264,13 @@
      </layout>
     </item>
     <item>
+     <widget class="QPushButton" name="pbEjecutarSegm">
+      <property name="text">
+       <string>Ejecutar Segmentator</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QPushButton" name="pbEjecutar">
       <property name="text">
        <string>Ejecutar</string>

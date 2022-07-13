@@ -19,5 +19,6 @@ public:
 };
 
 void test_outside_loop();
+void test_analyzer();
 
 #endif // TEST_H

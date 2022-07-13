@@ -18,12 +18,14 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_pbEjecutar_clicked();
+    void on_pbEjecutarSegm_clicked();
     void on_pbExaminar_clicked();
 
     void on_cboFijoConf_currentIndexChanged(int index);
 
     void on_chkDebug_stateChanged(int arg1);
+
+    void on_pbEjecutar_clicked();
 
 private:
     class PrivateData;

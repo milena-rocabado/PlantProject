@@ -26,10 +26,10 @@ void BgSubtractorSegemntator::create_bgSubtractor() {
 }
 // -------------------------------------------------------------------
 bool BgSubtractorSegemntator::set_video(const string &path) {
-    if (! Segmentator::set_video(path, false, false))
+    if (! Segmentator::set_video(path, false))
         return false;
 
-    open_video_writer(_model_out, outfilename(path, "_bg.avi"),true, false);
+    open_video_writer(_model_out, outfilename(path, "_model.avi"), true);
     if (!_model_out.isOpened()) {
         qCritical() << "set_video: Error creating model output file";
         return false;
@@ -46,5 +46,9 @@ void BgSubtractorSegemntator::set_up() {
 void BgSubtractorSegemntator::process_frame() {
     _bgSub->apply(_frame, _output, -1.);
     _bgSub->getBackgroundImage(_model);
+
+    crop_time_bar(_model);
+    crop_time_bar(_output);
+
     _model_out << _model;
 }
