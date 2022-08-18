@@ -43,6 +43,7 @@ void Calculator::crop_frame(const Mat &frame, Mat &dst) {
 }
 // ------------------------------------------------------------------
 void Calculator::find_dot(Mat &frame) {
+    // SEGMENTATORE NO INVIWERWW!!!
     cvtColor(frame, frame, COLOR_GRAY2BGR);
 
     int pos_x = frame.size().width / 3;

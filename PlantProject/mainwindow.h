@@ -41,9 +41,9 @@ private:
     bool set_file();
 
     void init_tabGlobal();
-    void init_tabSegmF();
-    void init_tabSegmA();
-    void init_tabBgS();
+    void init_tabStaticModel();
+    void init_tabAdaptiveModel();
+    void init_tabBgSubtractor();
 
     void crear_analizadorGlobal();
     void crear_analizadorSegmF();

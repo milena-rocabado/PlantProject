@@ -1,5 +1,7 @@
 #include "Analyzer.h"
 
+#include <Utils.h>
+
 #include <Segmentator.h>
 #include <GlobalSegmentator.h>
 #include <StaticModelSegmentator.h>
@@ -11,7 +13,6 @@
 using namespace std;
 using namespace cv;
 
-constexpr int Segmentator::BAR_HEIGHT;
 constexpr int Calculator::OUTPUT_HEIGHT_ADJ;
 
 Analyzer::Analyzer(const SegmType &segmType) {
@@ -26,7 +27,8 @@ Analyzer::Analyzer(const SegmType &segmType) {
 }
 // ------------------------------------------------------------------
 bool Analyzer::set_video(const std::string &path) {
-    if (! get_wd_from(path)) {
+    _wd = common::get_wd_from(path);
+    if (_wd.empty()) {
         qCritical() << "set_video: Path must be absolute";
         return false;
     }
@@ -41,14 +43,14 @@ bool Analyzer::set_video(const std::string &path) {
         return false;
     }
 
-    if (! open_video_writer(_mask, outfilename(path, "_processed.avi"), false,
-                            Segmentator::BAR_HEIGHT)) {
+    if (! open_video_writer(_mask, common::outfilename(path, "_processed.avi"), false,
+                            BAR_HEIGHT)) {
         qCritical() << "set_video: Error creating output file _salida";
         return false;
     } else qDebug() << "set_video: success opening _salida";
 
-    if (! open_video_writer(_sth, outfilename(path, "_cropped.avi"), /*false*/ true,
-                            Segmentator::BAR_HEIGHT)) {
+    if (! open_video_writer(_sth, common::outfilename(path, "_cropped.avi"), /*false*/ true,
+                            BAR_HEIGHT)) {
         qCritical() << "set_video: Error creating output file _sth";
         return false;
     } else qDebug() << "set_video: success opening _sth";
@@ -74,22 +76,6 @@ bool Analyzer::open_video_writer(cv::VideoWriter &writer, const std::string &fil
              << "x" << (_video.get(CAP_PROP_FRAME_HEIGHT) - height_adj);
 
     return writer.isOpened();
-}
-// ------------------------------------------------------------------
-string Analyzer::outfilename(const string &filename, const string &suffix) {
-    size_t lastdot = filename.find_last_of(".");
-    if (lastdot == string::npos) return filename + suffix;
-    return filename.substr(0, lastdot) + suffix;
-}
-// ------------------------------------------------------------------
-bool Analyzer::get_wd_from(const string &path) {
-    size_t last_slash = path.find_last_of("/");
-    if (last_slash != string::npos) {
-        _wd = path.substr(0, last_slash + 1);
-
-        _segm->set_wd(_wd);
-        return true;
-    } else return false;
 }
 // ------------------------------------------------------------------
 void Analyzer::process_video() {

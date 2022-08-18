@@ -14,7 +14,8 @@ public:
         Fijo,
         AdaptativoMedia,
         AdaptativoGauss,
-        Otsu
+        Otsu,
+        ThreshTypeNum
     };
 
     typedef struct {
@@ -22,45 +23,45 @@ public:
         double alpha;
     } Configuracion;
 
-    static constexpr Configuracion CONF_DF = { Fijo, 2.0 };
+    static constexpr double ALPHA_DF { 2.0 };
+
+    static constexpr Configuracion CONF_DF { Fijo, ALPHA_DF };
 
     GlobalSegmentator():
         _conf(CONF_DF)
     {}
 
-    GlobalSegmentator(const ThreshType &type, const double &alpha):
+    GlobalSegmentator(const ThreshType &type, double alpha = ALPHA_DF):
         _conf({type, alpha})
     {}
 
     ThreshType thresh_type() const;
     double alpha() const;
 
-    bool set_video(const std::string& path) override;
     void set_up() override {}
     void process_video();
     void process_debug() override { process_2_frames(); }
 
-    static std::string umbralizado_to_str(ThreshType u) {
-        switch (u) {
-        case Medio:           return "Medio";
-        case Fijo:            return "Fijo";
-        case AdaptativoMedia: return "Adaptativo de media";
-        case AdaptativoGauss: return "Adaptativo gaussiano";
-        case Otsu:            return "Binarización de Otsu";
-        }
-        return "Invalid enum";
-    }
+    static std::string umbralizado_to_str(ThreshType u);
+
+    // ONE TIME FUNCTIONS
+    void calculate_average_middle_point();
+    void calculate_percentile_thresh();
+
+    // TEST FUNCTIONS
+    void process_2_frames();
+    void process_2_frames(cv::Mat &night, cv::Mat &day);
+
 protected:
     void process_frame() override;
     void show_frame(const cv::Mat &frame, const std::string &name) override;
 
 private:
     Configuracion _conf;
-
-    void process_2_frames();
+    cv::Rect _roi; // crop frame before thresholding
 
     // PREPROCESADO
-    void preprocesar();
+    void preprocess();
 
     // UMBRALIZADO
     void umbralizar();

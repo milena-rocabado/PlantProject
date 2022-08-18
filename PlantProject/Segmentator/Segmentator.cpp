@@ -6,6 +6,8 @@
 
 #include <QDebug>
 
+#include <Utils.h>
+
 using namespace std;
 using namespace cv;
 
@@ -22,17 +24,16 @@ void Segmentator::set_wd(const string &path) {
     _wd = path;
 }
 // ------------------------------------------------------------------
-bool Segmentator::set_video(const string &path) {
-    return Segmentator::set_video(path, false);
-}
-// ------------------------------------------------------------------
-bool Segmentator::set_video(const std::string &path, const bool &isColor) {
-    if (! get_wd_from(path)) {
-        qCritical() << "set_video: Path must be absolute";
+bool Segmentator::set_video(const std::string &path) {
+    // Set working directory
+    _wd = common::get_wd_from(path);
+    if (_wd.empty()) {
+        qCritical() << "set_video: Path must be absolute. Path:" << QString::fromStdString(path);
         return false;
     }
     qDebug() << "set_video: " << QString::fromStdString(path);
 
+    // Set video input
     if (_video.isOpened())
         _video.release();
 
@@ -42,12 +43,16 @@ bool Segmentator::set_video(const std::string &path, const bool &isColor) {
         return false;
     }
 
-    open_video_writer(_salida, outfilename(path, "_processed.avi"), isColor);
+    // Set video output(s)
+    return open_video_outputs(path);
+}
+// ------------------------------------------------------------------
+bool Segmentator::open_video_outputs(const std::string &path) {
+    open_video_writer(_salida, common::outfilename(path, "_processed.avi"), false);
     if ( !_salida.isOpened()) {
         qCritical() << "set_video: Error creating output file _salida";
         return false;
-    } qDebug() << "set_video: ouput video isColor = " << isColor;
-
+    }
     return true;
 }
 // ------------------------------------------------------------------
@@ -130,63 +135,14 @@ void Segmentator::show_video() {
 }
 // -------------------------------------------------------------------
 void Segmentator::show_frame(const Mat &frame, const string &name) {
-    namedWindow(name, WINDOW_NORMAL);
-    moveWindow(name, 0, 0);
-    resizeWindow(name, frame.size().width, frame.size().height);
-    imshow(name, frame);
-    waitKey(1);
-}
-// ------------------------------------------------------------------
-string Segmentator::outfilename(const string &filename, const string &suffix) {
-    size_t lastdot = filename.find_last_of(".");
-    if (lastdot == string::npos) return filename + suffix;
-    return filename.substr(0, lastdot) + suffix;
-}
-// ------------------------------------------------------------------
-bool Segmentator::get_wd_from(const string &path) {
-    size_t last_slash = path.find_last_of("/");
-    if (last_slash != string::npos) {
-        _wd = path.substr(0, last_slash + 1);
-        return true;
-    } else return false;
-}
-// ------------------------------------------------------------------
-string Segmentator::build_abs_path(const string &path) {
-    assert(!_wd.empty());
-    stringstream ss;
-    ss << _wd << path;
-    return ss.str();
-}
-// ------------------------------------------------------------------
-void Segmentator::save_image(const Mat &im, const string &dir, const string &filename) {
-    string fp = build_abs_path("Ejemplos/"  + dir + "/" + filename + ".png");
-    imwrite(fp, im);
-}
-// ------------------------------------------------------------------
-void Segmentator::save_image(const Mat &im, const string &filename) {
-    string fp = build_abs_path("Ejemplos/" + filename + ".png");
-    imwrite(fp, im);
-}
-// ------------------------------------------------------------------
-void Segmentator::apply_mask(const Mat &img, const Mat &mask, Mat &dst) {
-    dst.release();
-    img.copyTo(dst, mask);
-}
-// ------------------------------------------------------------------
-void Segmentator::crop_time_bar(cv::Mat &img) {
-    crop_time_bar(img, img);
-}
-// ------------------------------------------------------------------
-void Segmentator::crop_time_bar(const Mat &src, Mat &dst) {
-    Rect roi(0, 0, src.size().width, src.size().height - BAR_HEIGHT);
-    dst = src(roi);
+    common::show_image(frame, name);
 }
 // -------------------------------------------------------------------
-void Segmentator::open(Mat &img) {
+void Segmentator::open(const Mat &src, Mat &dst) {
     Mat kernel = getStructuringElement(MORPH_CROSS, Size(3, 3));
-    morphologyEx(img, img, MORPH_OPEN, kernel);
+    morphologyEx(src, dst, MORPH_OPEN, kernel);
 }
 // -------------------------------------------------------------------
-void Segmentator::invert(Mat &img) {
-    img = 255 - img;
+void Segmentator::invert(const Mat &src, Mat &dst) {
+    dst = 255 - src;
 }

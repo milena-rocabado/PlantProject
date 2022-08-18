@@ -32,8 +32,6 @@ private:
 
     bool set_video(const std::string &path, const bool &isColor, const bool &isCropped);
     bool open_video_writer(cv::VideoWriter &, const std::string &file, const bool &isColor, const int &height_adj);
-    std::string outfilename(const std::string &filename, const std::string &suffix);
-    bool get_wd_from(const std::string &path);
 };
 
 #endif // ANALYZER_H

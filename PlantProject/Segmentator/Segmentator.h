@@ -5,20 +5,17 @@
 #include <opencv2/opencv.hpp>
 #include <chrono>
 
-#define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 class Segmentator {
 public:
-    static constexpr int NIGHT_SAMPLE_POS = 30;
-    static constexpr int DAY_SAMPLE_POS = 1050;
-
-    static constexpr int BAR_HEIGHT = 20;
+    static constexpr int NIGHT_SAMPLE_POS { 30 };
+    static constexpr int DAY_SAMPLE_POS { 1050 };
 
     Segmentator()
         : _pos(0)
     {}
 
-    virtual bool set_video(const std::string& path);
+    bool set_video(const std::string& path);
     void set_wd(const std::string &path);
     virtual void set_up() = 0;
 
@@ -44,20 +41,13 @@ protected:
 
     bool _ejemplo;
 
-    bool set_video(const std::string &path, const bool &isColor);
+    virtual bool open_video_outputs(const std::string &path);
     bool open_video_writer(cv::VideoWriter &, const std::string &file, const bool &isColor);
-    std::string outfilename(const std::string &filename, const std::string &suffix);
 
     virtual void process_frame() = 0;
     virtual void show_frame(const cv::Mat &frame, const std::string &name);
-    void save_image(const cv::Mat &im, const std::string &dir, const std::string &filename);
-    void save_image(const cv::Mat &im, const std::string &filename);
-
-    static void apply_mask(const cv::Mat &img, const cv::Mat &mask, cv::Mat &dst);
-    static void crop_time_bar(cv::Mat &);
-    static void crop_time_bar(const cv::Mat &src, cv::Mat &dst);
-    static void open(cv::Mat &);
-    static void invert(cv::Mat &);
+    static void open(const cv::Mat &src, cv::Mat &dst);
+    static void invert(const cv::Mat &src, cv::Mat &dst);
 
 private:
     std::chrono::high_resolution_clock::time_point _start;
@@ -70,9 +60,6 @@ private:
         auto end= std::chrono::high_resolution_clock::now();
         _time = end - _start;
     }
-
-    bool get_wd_from(const std::string &path);
-    std::string build_abs_path(const std::string &path);
 };
 
 #endif // ANALIZADOR_H

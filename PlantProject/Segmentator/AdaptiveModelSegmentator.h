@@ -15,6 +15,10 @@ public:
         : _alpha(1.0)
     {}
 
+    AdaptiveModelSegmentator(double alpha)
+        : _alpha(alpha)
+    {}
+
     double alpha();
     void set_alpha(const double &);
 

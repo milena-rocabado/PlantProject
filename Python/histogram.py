@@ -10,7 +10,7 @@ def main():
         return
 
     line = sys.argv[2]
-    image = skimage.io.imread(fname=sys.argv[1]) #, as_gray=True)
+    image = skimage.io.imread(fname=sys.argv[1], as_gray=True)
     plt.hist(image.flatten(), bins=128, range=[0,255], color='black')
 
     # plt.axvline(x=line)

@@ -5,34 +5,36 @@
 #include <opencv2/video/background_segm.hpp>
 #include <QMetaType>
 
-class BgSubtractorSegemntator : public Segmentator
+class BgSubtractorSegmentator : public Segmentator
 {
 public:
     enum Algorithm {
         KNN,
-        MOG2
+        MOG2,
+        AlgorithmNum
     };
 
-    BgSubtractorSegemntator():
+    static constexpr Algorithm ALG_DF = KNN;
+
+    BgSubtractorSegmentator():
         _alg(KNN)
     {}
-    ~BgSubtractorSegemntator() override;
+
+    BgSubtractorSegmentator(Algorithm alg):
+        _alg(alg)
+    {}
+
+    ~BgSubtractorSegmentator() override;
 
     Algorithm alg() { return _alg; }
     void set_alg(const Algorithm &alg) { _alg = alg; }
 
-    bool set_video(const std::string &path) override;
     void process_debug() override { process_video(); }
 
-    static std::string algorithm_to_string(Algorithm a) {
-        switch(a) {
-        case Algorithm::KNN: return "KNN";
-        case Algorithm::MOG2: return "MOG2";
-        }
-        return "";
-    }
+    static std::string algorithm_to_string(Algorithm a);
 
 protected:
+    bool open_video_outputs(const std::string &path) override;
     void set_up() override;
     void process_frame() override;
 

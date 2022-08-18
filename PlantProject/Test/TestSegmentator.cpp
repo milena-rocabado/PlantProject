@@ -4,23 +4,24 @@
 #include <Analyzer.h>
 #include <StaticModelSegmentator.h>
 #include <GlobalSegmentator.h>
+#include <Utils.h>
+
+const double GlobalSegmentator::ALPHA_DF;
 
 using namespace cv;
 using namespace std;
 
 TestSegmentator::TestSegmentator()
-{
-
-}
+{ }
 //----------------------------------------------------------
 void TestSegmentator::crop_test() {
     Mat img = imread("C:/Users/milena/git/PlantProject/Media/imagen-media.png");
     imshow("original", img);
-    crop_time_bar(img);
+    common::crop_time_bar(img);
     imshow("cropped", img);
 }
 //----------------------------------------------------------
-void TestSegmentator::show_frames() {
+void TestSegmentator::mean_values() {
     VideoCapture video;
     Mat frame;
     int start = 3270;
@@ -139,32 +140,99 @@ void TestSegmentator::variations_2() {
     qDebug() << "variations_2: alg done.";
 }
 //----------------------------------------------------------
-void TestSegmentator::breakpoint_increment() {
+void TestSegmentator::breakpoint_surrounding_mean_values() {
     int DN_BREAKPOINTS[] = { 0, 436, 1395, 1877, 2836, 3314 };
     VideoCapture video("C:/Users/milena/git/PlantProject/Media"
                        "/climbing_bean_project3_leaf_folding.AVI");
     Mat frame;
 
-    cout << "breakpoint_increment: start POS_FRAMES =" << _video.get(CAP_PROP_POS_FRAMES);
+    cout << "breakpoint_increment: start POS_FRAMES =" << _video.get(CAP_PROP_POS_FRAMES) << endl;
 
-    for (int i = 1; i < 6; i++) {
-        cout << "breakpoint_increment: " << DN_BREAKPOINTS[i] - DN_BREAKPOINTS[i-1] << endl;
-    }
+//    for (int i = 1; i < 6; i++) {
+//        cout << "breakpoint_increment: " << DN_BREAKPOINTS[i] - DN_BREAKPOINTS[i-1] << endl;
+//    }
 
     for (int i = 1; i < 6; i++) {
         video.set(CAP_PROP_POS_FRAMES, DN_BREAKPOINTS[i]-2);
 
         for (int j = 0; j < 5; j++) {
             video >> frame;
-            show_frame(frame, to_string(video.get(CAP_PROP_POS_FRAMES)));
 
             cvtColor(frame, frame, COLOR_RGB2GRAY);
+            show_frame(frame, to_string(video.get(CAP_PROP_POS_FRAMES)));
+
             Scalar m = mean(frame);
             cout << "breakpoint_increment: brightness = " << m[0] << endl;
         }
 
         cout << "--------" << endl;
     }
+}
+//----------------------------------------------------------
+//----------------------------------------------------------
+void TestSegmentator::dump_histograms() {
+    VideoCapture video("C:/Users/milena/git/PlantProject/Media"
+                       "/climbing_bean_project3_leaf_folding.AVI");
+    Mat hist;
+    Mat plot;
+    common::Histogram calc_hist;
+
+    Size sz;
+    common::plot_size(HIST_SIZE, sz);
+    cout << "hist_percentiles: size = " << sz << endl;
+
+    VideoWriter histOut("C:/Users/milena/git/PlantProject/Media"
+                        "/histogramas.AVI", static_cast<int>(video.get(CAP_PROP_FOURCC)), 5/*video.get(CAP_PROP_FPS)*/, sz, false);
+
+    _pos = NIGHT_SAMPLE_POS - 5;
+    video.set(CAP_PROP_POS_FRAMES, _pos);
+
+    for (; ; _pos++) {
+        video >> _frame;
+        if (_pos == DAY_SAMPLE_POS + 1 || _frame.empty()) break;
+
+        cvtColor(_frame, _frame, COLOR_RGB2GRAY);
+        calc_hist(_frame, hist);
+        common::plot_hist(hist, plot);
+
+        histOut << plot;
+
+    }
+
+    cout << "hist_percentiles: size = " << plot.size << endl;
+    histOut.release();
+    qDebug() << "hist_percentiles: done";
+
+//    show_frame(_frame, to_string(_pos));
+//    show_frame(plot, "hist-"+to_string(_pos));
+}
+//----------------------------------------------------------
+void determine_hist_percentile()
+{
+    GlobalSegmentator segmentator;
+    Mat night, day;
+    Mat night_hist, day_hist;
+    common::Histogram calc_hist;
+
+    segmentator.set_video("C:/Users/milena/git/PlantProject/Media"
+                          "/climbing_bean_project3_leaf_folding.AVI");
+    segmentator.process_2_frames(night, day);
+
+    common::show_image(night, "night");
+    common::save_image("C:/Users/milena/git/PlantProject/Media/", night, "Percentile", "night_sample");
+    common::show_image(day, "day");
+    common::save_image("C:/Users/milena/git/PlantProject/Media/", day, "Percentile", "day_sample");
+
+    calc_hist(night, night_hist);
+    calc_hist(day, day_hist);
+
+    float total = night_hist.at<float>(0) + night_hist.at<float>(255);
+    cout << "determine_hist_percentile: total pixels = " << total << endl;
+
+    float night_pc = 100.0f * night_hist.at<float>(0) / total;
+    float day_pc = 100.0f * day_hist.at<float>(0) / total;
+    cout << "determine_hist_percentile: night percentage = " << night_pc << endl;
+    cout << "determine_hist_percentile:   day percentage = " << day_pc << endl;
 }
 //----------------------------------------------------------
 void test_outside_loop() {

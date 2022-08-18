@@ -9,14 +9,22 @@ public:
     TestSegmentator();
 
     void crop_test();
-    void show_frames();
+
+    void mean_values();
+
     void variations();
     void variations_2();
-    void breakpoint_increment();
+    void breakpoint_surrounding_mean_values();
 
-    void process_video() {}
+    void dump_histograms();
 
+    //---------------------------------------------------
+    void process_debug() {}
+    void process_frame() {}
+    void set_up() {}
 };
+
+void determine_hist_percentile();
 
 void test_outside_loop();
 void test_analyzer();

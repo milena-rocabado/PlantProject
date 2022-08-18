@@ -1,6 +1,6 @@
 #include "AdaptiveModelSegmentator.h"
-
 #include <QtDebug>
+#include <Utils.h>
 
 using namespace std;
 using namespace cv;
@@ -49,7 +49,7 @@ void AdaptiveModelSegmentator::load_model(const bool &noche) {
 
     cvtColor(*modelo, *modelo, COLOR_BGR2GRAY);
     qDebug() << "cargar_modelos: model converted to grayscale";
-    crop_time_bar(*modelo);
+    common::crop_time_bar(*modelo);
     qDebug() << "cargar_modelos: time bar cropped model";
 }
 // -------------------------------------------------------------------
@@ -103,7 +103,7 @@ void AdaptiveModelSegmentator::create_model() {
 }
 // -------------------------------------------------------------------
 void AdaptiveModelSegmentator::process_frame() {
-    crop_time_bar(_frame);
+    common::crop_time_bar(_frame);
     cvtColor(_frame, _frame, COLOR_BGR2GRAY);
     if (_ejemplo) qDebug() << "analizar_frame: time bar cropped frame";
 
@@ -116,7 +116,7 @@ void AdaptiveModelSegmentator::process_frame() {
 
     if (_ejemplo) {
         show_frame(diferencia, to_string(_pos) + "-dif");
-        save_image(diferencia, "segmA", to_string(_pos) + "-dif");
+        common::save_image(_wd, diferencia, "segmA", to_string(_pos) + "-dif");
         qDebug() << "analizar_frame: dif computed";
     }
 
@@ -128,7 +128,7 @@ void AdaptiveModelSegmentator::process_frame() {
     threshold(diferencia, _output, 65.0, 255.0, THRESH_BINARY);
     if (_ejemplo) {
         show_frame(_output, to_string(_pos) + "-mask");
-        save_image(_output, "segmA", to_string(_pos) + "-mask");
+        common::save_image(_wd, _output, "segmA", to_string(_pos) + "-mask");
         qDebug() << "analizar_frame: mask computed";
     }
 
@@ -155,7 +155,7 @@ void AdaptiveModelSegmentator::process_2_frames() {
 }
 // -------------------------------------------------------------------
 void AdaptiveModelSegmentator::iterarate_thresh() {
-    crop_time_bar(_frame);
+    common::crop_time_bar(_frame);
     cvtColor(_frame, _frame, COLOR_BGR2GRAY);
     if (_ejemplo) qDebug() << "calcular_mascara: time bar cropped frame";
 
@@ -166,17 +166,17 @@ void AdaptiveModelSegmentator::iterarate_thresh() {
 
     if (_apply_contrast) {
         diferencia *= _alpha;
-        save_image(diferencia, "segmA", to_string(_pos) + "-dif");
+        common::save_image(_wd, diferencia, "segmA", to_string(_pos) + "-dif");
     }
 
     double start = 1., end = 80., increment = 20.;
     for (double i = start; i < end; i += increment)
     {
         threshold(diferencia, _output, i, 255.0, THRESH_BINARY);
-        save_image(_output, "segmA/umb", to_string(_pos) + "-mask-" + to_string(i));
+        common::save_image(_wd, _output, "segmA/umb", to_string(_pos) + "-mask-" + to_string(i));
         qDebug() << "calcular_mascara: mask computed thr =" << i;
     }
     double thr = threshold(diferencia, _output, 0., 255., THRESH_OTSU);
-    save_image(_output, "segmA/umb", to_string(_pos) + "-mask-otsu");
+    common::save_image(_wd, _output, "segmA/umb", to_string(_pos) + "-mask-otsu");
     qDebug() << "calcular_mascara: mask computed thr =" << thr;
 }

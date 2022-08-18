@@ -15,7 +15,8 @@ TEMPLATE = app
 # any feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
 # deprecated API in order to know how to port your code away from it.
-DEFINES += QT_DEPRECATED_WARNINGS
+DEFINES += QT_DEPRECATED_WARNINGS \
+        DEBUG
 
 # You can also make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -24,27 +25,31 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += c++11
 
+DEFINES += DUMP_ON
+
 SOURCES += \
-        ./Segmentator/AdaptiveModelSegmentator.cpp \
-        ./Segmentator/BgSubtractorSegmentator.cpp \
-        ./Segmentator/GlobalSegmentator.cpp \
-        ./Segmentator/Segmentator.cpp \
-        ./Segmentator/StaticModelSegmentator.cpp \
+        Segmentator/AdaptiveModelSegmentator.cpp \
+        Segmentator/BgSubtractorSegmentator.cpp \
+        Segmentator/GlobalSegmentator.cpp \
+        Segmentator/Segmentator.cpp \
+        Segmentator/StaticModelSegmentator.cpp \
         Analyzer/Analyzer.cpp \
         Calculator/Calculator.cpp \
         Test/TestSegmentator.cpp \
+        Utils/Utils.cpp \
         main.cpp \
         mainwindow.cpp
 
 HEADERS += \
-        ./Segmentator/AdaptiveModelSegmentator.h \
-        ./Segmentator/BgSubtractorSegmentator.h \
-        ./Segmentator/GlobalSegmentator.h \
-        ./Segmentator/Segmentator.h \
-        ./Segmentator/StaticModelSegmentator.h \
+        Segmentator/AdaptiveModelSegmentator.h \
+        Segmentator/BgSubtractorSegmentator.h \
+        Segmentator/GlobalSegmentator.h \
+        Segmentator/Segmentator.h \
+        Segmentator/StaticModelSegmentator.h \
         Analyzer/Analyzer.h \
         Calculator/Calculator.h \
         Test/TestSegmentator.h \
+        Utils/Utils.h \
         mainwindow.h
 
 FORMS += \
@@ -54,7 +59,8 @@ INCLUDEPATH += "C:\OpenCV\OpenCV4.1.1G\include" \
                ./Segmentator \
                ./Analyzer \
                ./Test \
-               ./Calculator
+               ./Calculator \
+               ./Utils
 
 LIBS += -L"C:\OpenCV\OpenCV4.1.1G\lib"\
  -llibopencv_world411
