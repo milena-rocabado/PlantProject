@@ -3,6 +3,8 @@
 
 #define GLOBAL_SEGM_ALPHA 2.0
 
+#define GLOBAL_THRESHOLD 132.526
+
 void run_global_segmentator();
 
 #endif // GLOBALSEGMENTATOR_H
