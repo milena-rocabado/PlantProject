@@ -99,8 +99,62 @@ void plot_hist(const cv::Mat &hist, cv::Mat &output) {
     output = plot;
 }
 //------------------------------------------------------------------------------
-void vertical_line(cv::Mat img, int pos) {
+void vertical_line(cv::Mat &img, int pos) {
     assert(pos <= img.cols);
 
     line(img, cv::Point(pos, 0), cv::Point(pos, img.rows), cv::Scalar(0, 0, 255));
 }
+//------------------------------------------------------------------------------
+void plot_hist(const cv::Mat &hist, cv::Mat &output, int v_line){
+    plot_hist(hist, output);
+    vertical_line(output, v_line);
+}
+//------------------------------------------------------------------------------
+template <typename T>
+void plot_vector(const std::vector<T> v, cv::Mat &plot) {
+    int padding = 15;
+    int   width = v.size() * 2;
+    int  height = static_cast<int>(0.75 * width);
+
+    cv::Size size(width + padding * 2, height + padding * 2);
+    cv::Rect mask(padding, padding, width, height);
+
+    cv::Mat img(size.height, size.width, CV_8U, cv::Scalar(255));
+    cv::Mat area = img(mask);
+
+    T max_elem = *(max_element(v.begin(), v.end()));
+    float factor = size.height / max_elem;
+
+    for (uint i = 0; i < v.size(); i++) {
+        int xPos = i * 2;
+        int yVal = static_cast<int>(v[i] * factor);
+
+        cv::Point a(xPos, height);
+        cv::Point b(xPos, height - yVal);
+
+        cv::line(plot, a, b, cv::Scalar(0), 2);
+        // a.x += 1; b.x += 1;
+        // cv::line(plot, a, b, cv::Scalar(0));
+
+        // X axis labels
+        if (i % 50 == 0) {
+            cv::putText(img, std::to_string(i), cv::Point(xPos, padding + height + 10),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0));
+        }
+    }
+
+    // Y axis labels
+    int resolution = 10;
+    for (int i = 0; i < resolution; i++) {
+        float value = i * max_elem / resolution;
+        int pos = i * height / resolution;
+        std::string text = std::to_string(static_cast<int>(value));
+
+        cv::putText(img, text, cv::Point(padding - 10, pos),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0));
+    }
+
+    plot = img;
+}
+
+template void plot_vector(const std::vector<float>, cv::Mat &);

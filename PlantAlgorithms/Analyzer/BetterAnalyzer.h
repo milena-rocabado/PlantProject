@@ -3,6 +3,8 @@
 
 void run_better_analyzer();
 
-void test_line();
+void run_better_analyzer_del_stem();
+
+void dump_frame(int pos);
 
 #endif // BETTERANALYZER_H
