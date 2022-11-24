@@ -74,7 +74,7 @@ void run_day_night_segmentator() {
                        video.get(CAP_PROP_FPS),
                        Size(out_width, out_height), false);
     Size plot_sz;
-    plot_size(HIST_SIZE, plot_sz);
+    get_plot_size(HIST_SIZE, plot_sz);
 
     VideoWriter plot_out(wd + "/plot_out.AVI", static_cast<int>(video.get(CAP_PROP_FOURCC)),
                        video.get(CAP_PROP_FPS),

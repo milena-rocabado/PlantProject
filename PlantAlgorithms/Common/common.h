@@ -14,7 +14,6 @@
 
 #define ARRAY_SIZE(a) (sizeof(a)/sizeof(a[0]))
 
-
 // PLATFORM CONSTANTS ----------------------------------------------------------
 #ifdef DESKTOP
 #define WD "C:/Users/radsa/git/TFG-PlantProject/Media/"
@@ -27,16 +26,33 @@
 // DEBUG MACROS ----------------------------------------------------------------
 #ifdef DEBUG
 #define TRACE(b, ...) { if (b) fprintf (stderr, __VA_ARGS__); }
-//#define DUMP(b, name, mat) { if (b) imwrite(std::string(WD) + std::string("Ejemplos/") + name,  mat); }
-#define DUMP(b, mat, ...) { if (b) { \
-    char buf[256]; \
-    std::sprintf(buf, __VA_ARGS__); \
-    imwrite(std::string(DUMP_WD) + std::string(buf), mat); \
+#define DUMP(b, mat_, ...) { if (b) { \
+    char buf_[256]; \
+    std::sprintf(buf_, __VA_ARGS__); \
+    imwrite(std::string(DUMP_WD) + std::string(buf_), mat_); \
+    } \
+}
+#define DUMP_HIST(b, hist_, ...) { if (b) { \
+    cv::Mat histogram_plot_; \
+    plot_hist(hist_, histogram_plot_); \
+    char buf_[256]; \
+    std::sprintf(buf_, __VA_ARGS__); \
+    imwrite(std::string(DUMP_WD) + std::string(buf_), histogram_plot_); \
+    } \
+}
+#define DUMP_HIST_N(b, hist_, n_, ...) { if (b) { \
+    cv::Mat histogram_plot_; \
+    plot_hist(hist_, histogram_plot_, n_); \
+    char buf_[256]; \
+    std::sprintf(buf_, __VA_ARGS__); \
+    imwrite(std::string(DUMP_WD) + std::string(buf_), histogram_plot_); \
     } \
 }
 #else
-#define TRACE(b, ...) { ; }
-#define DUMP(b, name, mat) { ; }
+#define TRACE(b, ...) ;
+#define DUMP(b, name, mat) ;
+#define DUMP_HIST(b, hist_, ...) ;
+#define DUMP_HIST_N(b, hist_, ...) ;
 #endif
 
 static int DN_BREAKPOINTS[] = { 436, 1395, 1877, 2836, 3314, 4188 };
@@ -71,18 +87,14 @@ typedef struct {
 
 } Histogram;
 
-void plot_hist(const cv::Mat &hist, cv::Mat &output);
+void plot_hist(const cv::Mat &hist, cv::Mat &output, int v_line = -1);
 
 void vertical_line(cv::Mat &img, int pos);
 
-void plot_hist(const cv::Mat &hist, cv::Mat &output, int v_line);
+void get_plot_size(int hist_size, cv::Size &size, cv::Size &area, int &padding);
 
-void plot_size(int hist_size, cv::Size &size, cv::Size &area, int &padding);
-
-void plot_size(int hist_size, cv::Size &size);
-
-
-// ---------- ------------------------------------------------------------------
+void get_plot_size(int hist_size, cv::Size &size);
+// -----------------------------------------------------------------------------
 template <typename T>
 extern void plot_vector(const std::vector<T> v, cv::Mat &plot);
 

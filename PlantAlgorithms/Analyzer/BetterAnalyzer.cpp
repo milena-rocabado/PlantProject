@@ -11,6 +11,8 @@ using namespace std;
 using namespace cv;
 
 #define VIDEO_OUTPUT
+//#define OTSU
+#define INITIAL_POS 0
 
 // INPUT
 static VideoCapture video;
@@ -22,15 +24,33 @@ static vector<string> win_name {
     "left_leaf",
     "right_leaf",
     "left_ellipses",
-    "right_ellipses"
+    "right_ellipses",
+    "thresholding"
 };
+
+//static vector<Point> win_pos {
+//    Point(     0,      0),
+//    Point(    10,     10),
+//#ifdef DESKTOP
+//    Point(950+10,     10),
+//    Point(    10, 530+10),
+//    Point(950+20, 530+10),
+//    Point(   950,    530)
+//#else
+//    Point(540+20,     10),
+//    Point(    10, 480+20),
+//    Point(540+20, 480+20)
+//#endif
+//};
+
 static vector<Point> win_pos {
-    Point(     0,      0),
+    Point(    510,   10),
     Point(    10,     10),
 #ifdef DESKTOP
-    Point(960+20,     10),
-    Point(    10, 540+20),
-    Point(960+20, 540+20)
+    Point(950+10,     10),
+    Point(    10, 530+10),
+    Point(950+20, 530+10),
+    Point(510,    530+10)
 #else
     Point(540+20,     10),
     Point(    10, 480+20),
@@ -48,20 +68,31 @@ static Mat right_plot;
 
 // CONTAINERS
 static Mat input;
+// - Preprocessing
 static Mat preproc_output;
+static Mat stretch_output;
+static Mat stretch_hist_output;
+// - Thresholding
 static Mat thresh_output;
+// - Leaf segmentation
 static Mat stem;
 static Mat left_leaf;
 static Mat right_leaf;
+// - Final output
 static Mat l_output;
 static Mat r_output;
 
 // CONSTANTS
+// - Not used
 static constexpr double CONTRAST_FACTOR  { 2.0 };
 static constexpr double PERCENTILE       { 0.206638 };
 static constexpr    int CONTOUR_MIN_SIZE { 15 };
 static constexpr    int STEM_WIDTH       { 5 };
+// - Leaf segmentation
 static constexpr  uchar LS_COLOR         { 255 };
+// - Finding threshold
+static constexpr    int VALLEY_THRESHOLD { 130 };
+static constexpr    int STREAK { 25 };
 
 // DEBUG
 static int pos;
@@ -71,8 +102,8 @@ static bool dump;
 static Histogram calc_hist;
 static float plant_px_num;
 
-// SEGMENTATION
-static Point roi_corner;
+// THRESHOLDING
+static double optimal_threshold;
 
 // COLORS
 static const Vec3b v_red     {   0,   0, 255 };
@@ -80,11 +111,11 @@ static const Vec3b v_green   {   0, 255,   0 };
 static const Vec3b v_magenta {  255,  0, 255 };
 static const Vec3b v_cyan    { 255, 255,   0 };
 
-// MASKS
+// MASK
+static Point roi_corner;
 static Size roi_sz;
+static Mat roi_mask;
 
-//------------------------------------------------------------------------------
-extern template void plot_vector<float>(const std::vector<float>, cv::Mat &);
 //------------------------------------------------------------------------------
 void initialize() {
     // Input initialization
@@ -103,11 +134,11 @@ void initialize() {
     roi_sz.height = 2 * sz.height / 3 - BAR_HEIGHT;
 
     // Mask for histogram calculation
-    Mat hist_mask = Mat::zeros(sz, CV_8UC1);
+    roi_mask = Mat::zeros(sz, CV_8UC1);
     Rect roi(roi_corner, roi_sz);
-    rectangle(hist_mask, roi, Scalar(255, 255, 255), FILLED);
+    rectangle(roi_mask, roi, Scalar(255, 255, 255), FILLED);
 
-    calc_hist.set_mask(hist_mask);
+    calc_hist.set_mask(roi_mask);
 
     // Percentile Threshold
     plant_px_num = static_cast<float>(sz.width / 3)
@@ -129,10 +160,12 @@ void initialize() {
 }
 //------------------------------------------------------------------------------
 void init_windows() {
-    Size sz(static_cast<int>(video.get(CAP_PROP_FRAME_WIDTH)),
-            static_cast<int>(video.get(CAP_PROP_FRAME_HEIGHT)));
-    Size win_sz(static_cast<int>(sz.width / 1.5),
-                static_cast<int>(sz.height / 1.5));
+//    Size sz(static_cast<int>(video.get(CAP_PROP_FRAME_WIDTH)),
+//            static_cast<int>(video.get(CAP_PROP_FRAME_HEIGHT)));
+//    Size win_sz(static_cast<int>(sz.width / 1.5),
+//                static_cast<int>(sz.height / 1.5));
+
+    Size win_sz = roi_sz;
 
     for(size_t i = 0; i < win_name.size(); i++) {
         namedWindow(win_name[i], WINDOW_NORMAL | WINDOW_KEEPRATIO);
@@ -141,14 +174,137 @@ void init_windows() {
     }
 }
 //------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+void stretch_histogram_minmax(const Mat &input, Mat &output) {
+    TRACE(dump, "> stretch_histogram_minmax(%d)\n", pos);
+
+    Mat in_hist;
+    calc_hist(input, in_hist);
+    DUMP_HIST(dump, in_hist, "Analyzer/stretch_hist_in_%d.png", pos);
+
+    double min, max;
+    minMaxLoc(input, &min, &max, nullptr, nullptr, roi_mask);
+    TRACE(dump, "* stretch_histogram_minmax(%d):  (in) min = %d max = %d\n", pos,
+          static_cast<int>(min), static_cast<int>(max));
+
+    input.convertTo(output, CV_32FC1);
+    output -= min;
+    output *= (255.0 / (max - min));
+
+    minMaxLoc(output, &min, &max, nullptr, nullptr, roi_mask);
+    TRACE(dump, "* stretch_histogram_minmax(%d): (out) min = %d max = %d\n", pos,
+          static_cast<int>(min), static_cast<int>(max));
+
+    Mat out_hist;
+    calc_hist(output, out_hist);
+    DUMP_HIST(dump, out_hist, "Analyzer/stretch_hist_out_mm_%d.png", pos);
+//    TRACE(dump, "* stretch_histogram(%d): hist[min] = %d hist[max] = %d\n", pos,
+//          static_cast<int>(out_hist.at<float>(static_cast<int>(min))),
+//          static_cast<int>(out_hist.at<float>(static_cast<int>(max))));
+
+    output.convertTo(output, CV_8UC1);
+    TRACE(dump, "< stretch_histogram_minmax(%d)\n", pos);
+}
+//------------------------------------------------------------------------------
+void stretch_histogram(const Mat &input, Mat &out_hist, Mat &output) {
+    TRACE(dump, "> stretch_histogram(%d)\n", pos);
+    static const float PERCENTILE = 0.015f;
+    static const float NUM_PIXELS = static_cast<float>(input.cols)
+                                  * static_cast<float>(input.rows)
+                                  * PERCENTILE;
+
+    Mat in_hist;
+    calc_hist(input, in_hist);
+    DUMP_HIST_N(dump, in_hist, static_cast<int>(optimal_threshold),
+                "Analyzer/stretch_hist_in_%d.png", pos);
+
+    double min, max;
+    float num;
+    int index;
+    // max is top 5%
+    for (index = HIST_SIZE - 1, num = .0f; index > 0; index--) {
+        num += in_hist.at<float>(index);
+        if (num > NUM_PIXELS) break;
+    }
+    max = static_cast<double>(index);
+    // min is bottom 5%
+    for (index = 0, num = .0f; index < HIST_SIZE; index++) {
+        num += in_hist.at<float>(index);
+        if (num > NUM_PIXELS) break;
+    }
+    min = static_cast<double>(index);
+
+    TRACE(dump, "* stretch_histogram(%d):  (in) min = %d max = %d\n", pos,
+          static_cast<int>(min), static_cast<int>(max));
+
+    input.convertTo(output, CV_32FC1);
+    output -= min;
+    output *= (255.0 / (max - min));
+
+    // minMaxLoc(output, &min, &max, nullptr, nullptr, roi_mask);
+    // TRACE(dump, "* stretch_histogram(%d): (out) min = %d max = %d\n", pos,
+    //       static_cast<int>(min), static_cast<int>(max));
+
+    output.convertTo(output, CV_8UC1);
+    calc_hist(output, out_hist);
+    DUMP_HIST_N(dump, out_hist, static_cast<int>(optimal_threshold),"Analyzer/stretch_hist_out_5p_%d.png", pos);
+    //    TRACE(dump, "* stretch_histogram(%d): hist[min] = %d hist[max] = %d\n", pos,
+    //          static_cast<int>(out_hist.at<float>(static_cast<int>(min))),
+    //          static_cast<int>(out_hist.at<float>(static_cast<int>(max))));
+
+    TRACE(dump, "< stretch_histogram(%d)\n", pos);
+}
+//------------------------------------------------------------------------------
+double find_threshold(const Mat &hist) {
+    TRACE(dump, "> find_threshold(VALLEY_THRESHOLD = %d, STREAK = %d)\n", pos,
+          VALLEY_THRESHOLD, STREAK);
+
+
+    int streak { 0 }, initial_bin { -1 };
+    float val;
+
+    for (int i = 0; i < hist.size[0]; i++) {
+        val = hist.at<float>(i);
+
+        if (val < VALLEY_THRESHOLD) {
+            if (0 == streak++) {
+                initial_bin = i;
+                TRACE(dump, "* find_threshold(%d): start streak at %d\n", pos, i);
+            }
+            TRACE(dump, "* find_threshold(%d): streak = %d\n", pos, streak);
+            if (streak == STREAK) break;
+        } else {
+            TRACE(dump, "* find_threshold(%d): restart streak at %d\n", pos, i);
+            streak = 0;
+        }
+    }
+
+    double threshold { -1.0 };
+    if (streak == STREAK) {
+        threshold = initial_bin + STREAK/2;
+        TRACE(dump, "* find_threshold(%d): threshold found = %.2f\n", pos, threshold);
+    } else {
+        TRACE(dump, "* find_threshold(%d): threshold not found\n", pos);
+    }
+
+    TRACE(dump, "< find_threshold()\n", pos);
+    return threshold;
+}
+//------------------------------------------------------------------------------
 void preprocess(const Mat &input, Mat &output) {
     // To grayscale
     cvtColor(input, output, COLOR_BGR2GRAY);
+    TRACE(dump, "* preprocess(%d): to grayscale\n", pos);
+    DUMP(dump, output, "Analyzer/gray_%d.png", pos);
 
     // Contrast adjustment
-    output *= CONTRAST_FACTOR;
+    // output *= CONTRAST_FACTOR;
+    // TRACE(dump, "* preprocess(%d): contrast adjusted\n", pos);
 
-    TRACE(dump, "* preprocess(%d)\n", pos);
+    // Stretch histogram
+    // stretch_histogram(output, output);
+    // DUMP(dump, output, "Analyzer/stretched_%d.png", pos);
+    // TRACE(dump, "* preprocess(%d): histogram streteched\n", pos);
 }
 //------------------------------------------------------------------------------
 void close(int size, Mat &image) {
@@ -179,6 +335,34 @@ void percentile_threshold(const Mat &input, Mat &output) {
     TRACE(dump, "< percentile_threshold(%d)\n", pos);
 }
 //------------------------------------------------------------------------------
+void otsu_threshold(const Mat &input, Mat &output) {
+    TRACE(dump, "> otsu_threshold(%d)\n", pos);
+
+    Rect roi(roi_corner, roi_sz);
+    Mat otsu_in = input(roi);
+    Mat otsu_out(otsu_in.size(), otsu_in.type()); // will be discarded
+
+    TRACE(dump, "* otsu_threshold(%d): running Otsu threshold...\n", pos);
+    // Get optimal threshold by applying Otsu algorithm to ROI
+    double thresh = threshold(otsu_in, otsu_out, 255, 255, THRESH_OTSU);
+    TRACE(dump, "* otsu_threshold(%d): thresh = %d\n", pos, static_cast<int>(thresh));
+
+    TRACE(dump, "* otsu_threshold(%d): creating output...\n", pos);
+    // Apply threshold to whole image
+    threshold(input, output, thresh, 255, THRESH_BINARY);
+
+    // Display threshold on histogram
+    Mat histogram, plot;
+    TRACE(dump, "* otsu_threshold(%d): calculating histogram...\n", pos);
+    calc_hist(input, histogram); // mask already set
+    TRACE(dump, "* otsu_threshold(%d): plotting histogram...\n", pos);
+    plot_hist(histogram, plot, static_cast<int>(thresh));
+
+    DUMP(dump, output, "Analyzer/otsu_%d.png", pos);
+    DUMP(dump, plot, "Analyzer/hist_%d.png", pos);
+    TRACE(dump, "< otsu_threshold(%d)\n", pos);
+}
+//------------------------------------------------------------------------------
 void color_leaves(const Point &point, Mat &l_output, Mat &r_output) {
 
     Scalar color = { 255 };
@@ -197,7 +381,8 @@ void color_leaves(const Point &point, Mat &l_output, Mat &r_output) {
 }
 //------------------------------------------------------------------------------
 void hide_plant_pot(Mat &output) {
-    Rect pot(0, POT_Y_POS, output.cols, output.rows - POT_Y_POS - BAR_HEIGHT);
+//    Rect pot(0, POT_Y_POS, output.cols, output.rows - POT_Y_POS - BAR_HEIGHT);
+    Rect pot(0, POT_Y_POS - 5, output.cols, output.rows - POT_Y_POS - BAR_HEIGHT);
     rectangle(output, pot, LS_COLOR, FILLED);
 }
 //------------------------------------------------------------------------------
@@ -242,7 +427,7 @@ void leaf_segmentation(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem
 
     TRACE(dump, "* leaf_segmentation(%d): first loop start\n", pos);
     // To start, search whole row
-    for (i = 0; !found && first && i < ref.rows; i++) {
+    for (i = INITIAL_POS; !found && first && i < ref.rows; i++) {
         for (int j = 0; j < ref.cols; j++) {
             Vec3b &pixel = ref.at<Vec3b>(i, j);
             if ((found = is_stem(pixel))) {
@@ -432,34 +617,45 @@ void dump_data() {
     }
 }
 //------------------------------------------------------------------------------
-void run_better_analyzer() {
-    TRACE(true, "> run_better_analyzer\n");
+void run_better_analyzer_otsu() {
+    TRACE(true, "> run_better_analyzer()\n");
     initialize();
-#ifdef VIDEO_OUTPUT
-    init_windows();
-#endif
-    TRACE(true, "* run_better_analyzer(%d): roi(%d x %d)\n", pos,
+    TRACE(true, "* run_better_analyzer(): roi(%d x %d)\n",
           roi_sz.width, roi_sz.height);
 
-    for (pos = 0;; pos++) {
+    #ifdef VIDEO_OUTPUT
+    init_windows();
+    #endif
+
+    int initial_pos = INITIAL_POS;
+    if (initial_pos != 0) {
+        TRACE(true, "* run_better_analyzer(): setting video position at %d\n", initial_pos);
+        video.set(CAP_PROP_POS_FRAMES, initial_pos);
+        TRACE(true, "* run_better_analyzer(): position set\n");
+        pos = initial_pos;
+    }
+
+    TRACE(true, "* run_better_analyzer(): starting loop...\n");
+    for (;; pos++) {
         video >> input;
 
         if (/*pos == 1051 ||*/ input.empty()) break;
         dump = (pos % 150 == 0 || pos == 49);
-        TRACE(dump, "* run_better_analyzer: %d segundos analizados\n", pos/30);
 
         // Preprocess image
         preprocess(input, preproc_output);
 
         // Thresholding
-        percentile_threshold(preproc_output, thresh_output);
+        // percentile_threshold(preproc_output, thresh_output);
+        otsu_threshold(preproc_output, thresh_output);
 
         // Segmentation
         leaf_segmentation(thresh_output, left_leaf, right_leaf, stem);
 
         // Ellipse fitting
-        close(5, left_leaf); // clean to avoid unwanted contours
-        close(5, right_leaf); // clean to avoid unwanted contours
+        // with Otsu thresholding, image already clean
+        // close(5, left_leaf); // clean to avoid unwanted contours
+        // close(5, right_leaf); // clean to avoid unwanted contours
         cvtColor(thresh_output, l_output, COLOR_GRAY2BGR);
         cvtColor(thresh_output, r_output, COLOR_GRAY2BGR);
         ellipse_fitting(left_leaf, true, l_output);
@@ -474,16 +670,102 @@ void run_better_analyzer() {
         imshow("right_ellipses", r_output);
         waitKey(frame_ms);
         #endif
-    }
 
-    // Dump data to file
-    DUMP(true, left_plot, "Analyzer/plot_left.png");
-    DUMP(true, right_plot, "Analyzer/plot_right.png");
+        TRACE(dump, "*** run_better_analyzer: %d segundos analizados\n", pos/30);
+    }
 
     dump_data();
     destroyAllWindows();
     TRACE(true, "< run_better_analyzer()\n");
 }
+//------------------------------------------------------------------------------
+void run_better_analyzer() {
+    TRACE(true, "> run_better_analyzer()\n");
+    initialize();
+    TRACE(true, "* run_better_analyzer(): roi(%d x %d)\n",
+          roi_sz.width, roi_sz.height);
+
+    Rect roi(roi_corner, roi_sz);
+
+    #ifdef VIDEO_OUTPUT
+    init_windows();
+    #endif
+
+    // Find threshold
+    #ifndef OTSU
+    dump = true; pos = -1;
+    video >> input;
+    cvtColor(input, preproc_output, COLOR_BGR2GRAY);
+    stretch_histogram(preproc_output, stretch_hist_output, stretch_output);
+    optimal_threshold = find_threshold(stretch_hist_output);
+    video.set(CAP_PROP_POS_FRAMES, 0);
+    #endif
+
+    int initial_pos = INITIAL_POS;
+    if (initial_pos != 0) {
+        TRACE(true, "* run_better_analyzer(): setting video position at %d\n", initial_pos);
+        video.set(CAP_PROP_POS_FRAMES, initial_pos);
+        TRACE(true, "* run_better_analyzer(): position set\n");
+        pos = initial_pos;
+    }
+
+    TRACE(true, "* run_better_analyzer(): starting loop...\n");
+    for (pos = 0;; pos++) {
+        video >> input;
+
+        if (/*pos == 1051 ||*/ input.empty()) break;
+        dump = (pos % 150 == 0 || pos == 49);
+
+        // Preprocess image
+        preprocess(input, preproc_output);
+
+        // Stretch histogram
+        stretch_histogram(preproc_output, stretch_hist_output, stretch_output);
+        DUMP(dump, stretch_output, "Analyzer/stretched_5p_%d.png", pos);
+        // stretch_histogram_minmax(preproc_output, stretch_output);
+        // DUMP(dump, stretch_output, "Analyzer/stretched_mm_%d.png", pos);
+
+        // Thresholding
+        // percentile_threshold(preproc_output, thresh_output);
+        #ifndef OTSU
+        threshold(stretch_output, thresh_output, optimal_threshold, 255.0, THRESH_BINARY);
+        #else
+        otsu_threshold(preproc_output, thresh_output);
+        #endif
+        DUMP(dump, thresh_output, "Analyzer/thresh_%d.png", pos);
+
+        // Segmentation
+        leaf_segmentation(thresh_output, left_leaf, right_leaf, stem);
+
+        // Ellipse fitting
+        // close(5, left_leaf); // clean to avoid unwanted contours
+        // close(5, right_leaf); // clean to avoid unwanted contours
+        cvtColor(thresh_output, l_output, COLOR_GRAY2BGR);
+        cvtColor(thresh_output, r_output, COLOR_GRAY2BGR);
+        ellipse_fitting(left_leaf, true, l_output);
+        ellipse_fitting(right_leaf, false, r_output);
+
+
+        // Output video feed
+        #ifdef VIDEO_OUTPUT
+        imshow("thresholding", thresh_output(roi));
+        imshow("stem", stem(roi));
+        imshow("left_leaf", left_leaf(roi));
+        imshow("right_leaf", right_leaf(roi));
+        imshow("left_ellipses", l_output(roi));
+        imshow("right_ellipses", r_output(roi));
+        waitKey(frame_ms);
+        #endif
+
+        TRACE(dump, "*** run_better_analyzer: %d segundos analizados\n", pos/30);
+    }
+
+    dump_data();
+    destroyAllWindows();
+    TRACE(true, "< run_better_analyzer()\n");
+}
+//------------------------------------------------------------------------------
+// Not used --------------------------------------------------------------------
 //------------------------------------------------------------------------------
 void run_better_analyzer_del_stem() {
     TRACE(true, "> run_better_analyzer\n");

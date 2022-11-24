@@ -2,6 +2,11 @@
 #include <sstream>
 #include <string>
 
+static const int PLOT_FONT_FACE { cv::FONT_HERSHEY_SIMPLEX };
+static const int PLOT_FONT_THICKNESS { 1 };
+static const double PLOT_FONT_SCALE { 0.3 };
+static const cv::Scalar PLOT_AXIS_COLOR { 170, 170, 170 };
+
 void crop_roi(const cv::Mat &src, cv::Mat &dst) {
     cv::Rect roi(src.cols/3, 0, src.cols/3, src.rows - BAR_HEIGHT);
     dst = src(roi);
@@ -53,8 +58,8 @@ std::string image_type(const cv::Mat &img) {
 }
 // -----------------------------------------------------------------------------
 // -----------------------------------------------------------------------------
-void plot_size(int hist_size, cv::Size &size, cv::Size &area, int &padding) {
-    int   width = hist_size * 2;
+void get_plot_size(int hist_size, cv::Size &size, cv::Size &area, int &padding) {
+    int   width = hist_size/* * 2*/;
     int  height = static_cast<int>(0.75 * width);
 
     padding = 15;
@@ -62,39 +67,55 @@ void plot_size(int hist_size, cv::Size &size, cv::Size &area, int &padding) {
     size = cv::Size(width + padding * 2, height + padding * 2);
 }
 // -----------------------------------------------------------------------------
-void plot_size(int hist_size, cv::Size &size) {
+void get_plot_size(int hist_size, cv::Size &size) {
     cv::Size area;
     int padding;
-    plot_size(hist_size, size, area, padding);
+    get_plot_size(hist_size, size, area, padding);
 }
 //------------------------------------------------------------------------------
-void plot_hist(const cv::Mat &hist, cv::Mat &output) {
+void plot_hist(const cv::Mat &hist, cv::Mat &output, int v_line) {
+    assert(v_line == -1 || v_line <= hist.size[0]);
+
     int padding;
-    cv::Size size, area;
-    plot_size(hist.size[0], size, area, padding);
+    cv::Size plot_size, area_size;
+    get_plot_size(hist.size[0], plot_size, area_size, padding);
 
-    cv::Mat plot(size.height, size.width, CV_8U, cv::Scalar(255));
+    cv::Mat plot(plot_size.height, plot_size.width, CV_8UC3, cv::Scalar(255, 255, 255));
+    cv::Rect area_rect(padding, padding, area_size.width, area_size.height);
+    cv::Mat area = plot(area_rect);
 
-    double factor;
-    minMaxLoc(hist, nullptr, &factor);
-    factor = size.height / factor;
+    cv::rectangle(plot, area_rect, PLOT_AXIS_COLOR);
 
-    for (int i = 0; i < hist.size[0]; i++) {
-        float histVal = hist.at<float>(i);
-        int xPos = i * 2 + padding;
+    double factor { 0.038616 };
+//    minMaxLoc(hist, nullptr, &factor);
+//    factor = area_size.height / factor;
+//    TRACE(true, "plot_hist(): factor = %f\n", factor);
 
-        int yVal = static_cast<int>(static_cast<double>(histVal) * factor);
-        cv::Point a(xPos, padding + area.height);
-        cv::Point b(xPos, padding + area.height - yVal);
-        cv::line(plot, a, b, cv::Scalar(0));
-        a.x += 1; b.x += 1;
-        cv::line(plot, a, b, cv::Scalar(0));
-
+    for (int i = 0; i < area_size.width; i++) {
+        // X axis labels
         if (i % 50 == 0) {
-            cv::putText(plot, std::to_string(i), cv::Point(xPos, padding + area.height + 10),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0));
+            cv::line(plot, { padding + i, padding + area_size.height },
+                     { padding + i, padding + area_size.height + 2},
+                     PLOT_AXIS_COLOR, 1);
+
+            cv::Size text_sz = cv::getTextSize(std::to_string(i), PLOT_FONT_FACE,
+                                               PLOT_FONT_SCALE, PLOT_FONT_THICKNESS, nullptr);
+            cv::Point text_pos(padding + i - text_sz.width/2, padding + area_size.height + 10);
+            cv::putText(plot, std::to_string(i), text_pos,
+                        PLOT_FONT_FACE, PLOT_FONT_SCALE, cv::Scalar(0));
         }
+
+        float histVal = hist.at<float>(i);
+
+        int val = static_cast<int>(static_cast<double>(histVal) * factor);
+        if (val != 0)
+            cv::line(area, { i, area_size.height }, { i, area_size.height - val }, cv::Scalar(0));
+
     }
+
+    if (v_line != -1)
+        cv::line(area, cv::Point(v_line, 0), cv::Point(v_line, area_size.height),
+                 cv::Scalar(0, 0, 255), 1);
 
     output = plot;
 }
@@ -103,11 +124,6 @@ void vertical_line(cv::Mat &img, int pos) {
     assert(pos <= img.cols);
 
     line(img, cv::Point(pos, 0), cv::Point(pos, img.rows), cv::Scalar(0, 0, 255));
-}
-//------------------------------------------------------------------------------
-void plot_hist(const cv::Mat &hist, cv::Mat &output, int v_line){
-    plot_hist(hist, output);
-    vertical_line(output, v_line);
 }
 //------------------------------------------------------------------------------
 template <typename T>
