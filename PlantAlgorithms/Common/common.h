@@ -95,7 +95,5 @@ void get_plot_size(int hist_size, cv::Size &size, cv::Size &area, int &padding);
 
 void get_plot_size(int hist_size, cv::Size &size);
 // -----------------------------------------------------------------------------
-template <typename T>
-extern void plot_vector(const std::vector<T> v, cv::Mat &plot);
 
 #endif // COMMON_H

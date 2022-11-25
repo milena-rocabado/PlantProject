@@ -6,11 +6,12 @@
 #include <fstream>
 #include <algorithm>
 #include <opencv2/opencv.hpp>
+#include <stdlib.h>
 
 using namespace std;
 using namespace cv;
 
-#define VIDEO_OUTPUT
+//#define VIDEO_OUTPUT
 //#define OTSU
 #define INITIAL_POS 0
 
@@ -58,14 +59,6 @@ static vector<Point> win_pos {
 #endif
 };
 
-// DATA OUTPUT
-static ofstream left_leaf_of;
-static ofstream right_leaf_of;
-static vector<float> left_leaf_vector;
-static vector<float> right_leaf_vector;
-static Mat left_plot;
-static Mat right_plot;
-
 // CONTAINERS
 static Mat input;
 // - Preprocessing
@@ -92,7 +85,11 @@ static constexpr    int STEM_WIDTH       { 5 };
 static constexpr  uchar LS_COLOR         { 255 };
 // - Finding threshold
 static constexpr    int VALLEY_THRESHOLD { 130 };
-static constexpr    int STREAK { 25 };
+static constexpr    int VALLEY_STREAK { 25 };
+// - Day/night detection
+static constexpr double TOLERANCE { 7. };
+static constexpr int TIME_STREAK { 5 };
+static constexpr int MIN_LENGTH { 100 };
 
 // DEBUG
 static int pos;
@@ -115,6 +112,34 @@ static const Vec3b v_cyan    { 255, 255,   0 };
 static Point roi_corner;
 static Size roi_sz;
 static Mat roi_mask;
+
+// DAY/NIGHT DETECTION
+static bool night { true };
+static vector<int> breakpoints; // Stores frame first position of each period
+static double last_br;
+static    int last_pos;
+static    int dif_streak { 0 };
+static vector<double> br_plot;
+
+// DATA OUTPUT
+static ofstream data_of;
+static vector<float> left_leaf_vector;
+static vector<float> right_leaf_vector;
+typedef struct {
+    char padding[3];
+    bool night;
+    int pos;
+    float left_angle;
+    float right_angle;
+} data_out_t;
+static constexpr int DATA_OUT_NUM { TIME_STREAK };
+static data_out_t data_out[DATA_OUT_NUM];
+/*
+ * Idea: ir almacenando info en estructura, cuando se llene volcar. La deteccion
+ * de un breakpoint se retrasa maximo TIME_STREAK, por tanto almacenar TIME_STREAK
+ * datos seria suficiente. Al encontrar bp, actualizar estructura.
+ * Funcion para volcar info, funcion para actualizar info.
+*/
 
 //------------------------------------------------------------------------------
 void initialize() {
@@ -149,10 +174,9 @@ void initialize() {
     frame_ms = static_cast<int>(1000.0 / video.get(CAP_PROP_FPS));
 
     // File output init
-    left_leaf_of.open( DUMP_WD + string("Analyzer/data_left.csv"),
+    data_of.open(DUMP_WD + string("Analyzer/data_output.csv"),
                        ofstream::out | ofstream::trunc);
-    right_leaf_of.open(DUMP_WD + string("Analyzer/data_right.csv"),
-                       ofstream::out | ofstream::trunc);
+    data_of << "Frame,Day/Night,Left_leaf_angle,Right_leaf_angle" << endl;
 
     TRACE(true, "* initialize(): roi(%d x %d)\n",
           roi_sz.width, roi_sz.height);
@@ -171,6 +195,24 @@ void init_windows() {
         namedWindow(win_name[i], WINDOW_NORMAL | WINDOW_KEEPRATIO);
         resizeWindow(win_name[i], win_sz);
         moveWindow(win_name[i], win_pos[i].x, win_pos[i].y);
+    }
+}
+//------------------------------------------------------------------------------
+void dump_out_data() {
+    for (int i = 0; i < DATA_OUT_NUM; i++) {
+        data_of << data_out[i].pos << ","
+                << (data_out[i].night ? "night," : "day,")
+                << data_out[i].left_angle << ","
+                << data_out[i].right_angle << endl;
+    }
+}
+//------------------------------------------------------------------------------
+void update_data(int pos) {
+    night = !night;
+    for (int i = 0; i < DATA_OUT_NUM; i++) {
+        if (data_out[i].pos >= pos) {
+            data_out[i].night = night;
+        }
     }
 }
 //------------------------------------------------------------------------------
@@ -256,9 +298,8 @@ void stretch_histogram(const Mat &input, Mat &out_hist, Mat &output) {
 }
 //------------------------------------------------------------------------------
 double find_threshold(const Mat &hist) {
-    TRACE(dump, "> find_threshold(VALLEY_THRESHOLD = %d, STREAK = %d)\n", pos,
-          VALLEY_THRESHOLD, STREAK);
-
+    TRACE(dump, "> find_threshold(VALLEY_THRESHOLD = %d, STREAK = %d)\n",
+          VALLEY_THRESHOLD, VALLEY_STREAK);
 
     int streak { 0 }, initial_bin { -1 };
     float val;
@@ -272,7 +313,7 @@ double find_threshold(const Mat &hist) {
                 TRACE(dump, "* find_threshold(%d): start streak at %d\n", pos, i);
             }
             TRACE(dump, "* find_threshold(%d): streak = %d\n", pos, streak);
-            if (streak == STREAK) break;
+            if (streak == VALLEY_STREAK) break;
         } else {
             TRACE(dump, "* find_threshold(%d): restart streak at %d\n", pos, i);
             streak = 0;
@@ -280,8 +321,8 @@ double find_threshold(const Mat &hist) {
     }
 
     double threshold { -1.0 };
-    if (streak == STREAK) {
-        threshold = initial_bin + STREAK/2;
+    if (streak == VALLEY_STREAK) {
+        threshold = initial_bin + VALLEY_STREAK/2;
         TRACE(dump, "* find_threshold(%d): threshold found = %.2f\n", pos, threshold);
     } else {
         TRACE(dump, "* find_threshold(%d): threshold not found\n", pos);
@@ -305,6 +346,193 @@ void preprocess(const Mat &input, Mat &output) {
     // stretch_histogram(output, output);
     // DUMP(dump, output, "Analyzer/stretched_%d.png", pos);
     // TRACE(dump, "* preprocess(%d): histogram streteched\n", pos);
+}
+//------------------------------------------------------------------------------
+#define PLOT_FACTOR 5
+#define INIT_POS 0
+template <typename T>
+extern void plot_vector(const std::vector<T> v, cv::Mat &plot) {
+    int padding = 15;
+    int   width = v.size();
+    int  height = static_cast<int>(0.75 * width);
+
+    cv::Size size(width + padding * 2, height + padding * 2);
+    cv::Mat img(size.height, size.width, CV_8U, cv::Scalar(255));
+
+    cv::Rect mask(padding, padding, width, height);
+    cv::Mat area = img(mask);
+
+    T max_elem = *(max_element(v.begin(), v.end()));
+    double factor = size.height / max_elem;
+
+    for (uint i = 0; i < v.size(); i++) {
+        int x = i;
+        int y = static_cast<int>(v[i] * factor);
+
+        cv::Point a(x, height);
+        cv::Point b(x, height - y);
+
+        cv::line(area, a, b, cv::Scalar(0));
+
+        // X axis labels
+        if (i % 50 == 0) {
+            cv::putText(img, std::to_string(INIT_POS+i*PLOT_FACTOR), cv::Point(padding + x, padding + height + 10),
+                        cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0));
+        }
+    }
+
+    // Y axis labels
+    int values = 10;
+    for (int i = 0; i < values; i++) {
+        int value = static_cast<int>(i * max_elem / values);
+        int pos = height - (i * height / values);
+        std::string text = std::to_string(value);
+
+        cv::putText(img, text, cv::Point(padding - 10, padding + pos),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.3, cv::Scalar(0));
+    }
+
+    plot = img;
+}
+//------------------------------------------------------------------------------
+/*
+ * Necesito hacer backtracking para saber si es de día o noche. Entonces primer
+ * recorrido del video para decidir si es dia o noche, guardando resultados en
+ * vector de bool. A medida que se recorre por segunda vez para calcular angulos
+ * se sacan los valores del vector para volcarlos en el csv.
+ *
+ * Last brightness almacena el valor de brillo anterior, para cada frame calcular
+ * brillo y calcular diferencia con anterior, si la dif no supera un umbral, almacenar
+ * brillo en last_br y pasar al siguiente.
+ * Si sí, no actualizar last_br, calcular diferencia con los siguientes frames.
+ * Si la diferencia con estos tmb supera umbral (3?5? veces --> contar veces),
+ * cambio. Siendo la pos de last_br la ultima del ultimo periodo (dia/noche)
+ *
+ * umbral diferencia ~10
+ *
+*/
+//------------------------------------------------------------------------------
+void day_or_night_test() {
+    TRACE(true, "> day_or_night()\n");
+    Mat f;
+    // plot
+    vector<double> mean_vals;
+    double brightness;
+    double sum { .0 };
+    int num { PLOT_FACTOR };
+    // alg
+    double last_br, dif;
+    int last_pos { 0 };
+    int n { 0 };
+    vector<int> breakpoints;
+
+    // Initial brightness
+    if (INIT_POS) video.set(CAP_PROP_POS_FRAMES, INIT_POS);
+    video >> f;
+    cvtColor(f, f, COLOR_BGR2GRAY);
+    last_br = mean(f)[0];
+    last_pos = INIT_POS;
+    breakpoints.push_back(INIT_POS);
+
+    for (pos = INIT_POS+1;; pos++) {
+        video >> f;
+        if (f.empty()) break;
+        dump = pos%100==0;
+
+        cvtColor(f, f, COLOR_BGR2GRAY);
+        brightness = mean(f)[0];
+
+        // Algorithm -----------------------------------------------------------
+        if ((dif = abs(last_br - brightness)) > TOLERANCE) {
+            // Do not update last_br
+            n++;
+            TRACE(true, "* day_or_night(): !! (%d) last_pos = %d last_br = %.2f pos = %d brightness = %.2f diference = %.2f\n",
+                  n, last_pos, last_br, pos, brightness, dif);
+        } else {
+            TRACE(n!=0, "* day_or_night(): -- (%d) last_pos = %d last_br = %.2f pos = %d brightness = %.2f diference = %.2f\n",
+                  n, last_pos, last_br, pos, brightness, dif);
+
+            // Update last_br
+            last_br = brightness;
+            last_pos = pos;
+            n = 0;
+        }
+
+        if (n == TIME_STREAK) {
+            // Consider as day/night breakpoint
+            TRACE(n!=0, "* day_or_night(): breakpoint found: %d\n", last_pos+1);
+            if (abs(breakpoints[breakpoints.size() - 1] - pos)>MIN_LENGTH)
+                breakpoints.push_back(last_pos+1);
+            last_br = brightness;
+            last_pos = pos;
+            n = 0;
+        }
+
+        // Plot ----------------------------------------------------------------
+        sum += brightness;
+        if (pos % num == 0) {
+            mean_vals.push_back(sum / num);
+            sum = 0.;
+        }
+    }
+
+    Mat plot;
+    plot_vector(mean_vals, plot);
+    cvtColor(plot, plot, COLOR_GRAY2BGR);
+    for(uint i = 0; i < breakpoints.size(); i++) {
+        vertical_line(plot, (breakpoints[i] - INIT_POS)/PLOT_FACTOR);
+    }
+    DUMP(true, plot, "Analyzer/brightness.png");
+
+    TRACE(true, "* day_or_night(): breakpoints.size = %d\n", breakpoints.size());
+    TRACE(true, "< day_or_night()\n");
+}
+//------------------------------------------------------------------------------
+void day_or_night(const Mat &input) {
+    double brightness = mean(input)[0];
+    br_plot.push_back(brightness);
+
+    if (pos == INITIAL_POS) {
+        // Initialize structure
+        last_br = brightness;
+        last_pos = pos;
+        dif_streak = 0;
+        breakpoints.push_back(pos);
+    } else {
+        // Calculate diference in brightness since last pos
+        double dif = abs(brightness - last_br);
+        if (dif > TOLERANCE) {
+            // Increment times tolerance surpassed
+            dif_streak++;
+            TRACE(true, "* day_or_night_(): !! (%d) last_pos = %d last_br = %.2f"
+                        " pos = %d brightness = %.2f diference = %.2f\n",
+                  dif_streak, last_pos, last_br, pos, brightness, dif);
+        } else {
+            TRACE(dif_streak!=0, "* day_or_night(): -- (%d) last_pos = %d last_br = %.2f"
+                                 " pos = %d brightness = %.2f diference = %.2f\n",
+                  dif_streak, last_pos, last_br, pos, brightness, dif);
+
+            // Tolerance not surpassed, update last_br
+            last_br = brightness;
+            last_pos = pos;
+            dif_streak = 0;
+        }
+
+        // Tolerance surpassed TIME_STREAK times
+        if (dif_streak == TIME_STREAK) {
+            TRACE(true, "* day_or_night(): TIME_STREAK: %d\n", last_pos+1);
+            // If last period is long enough to be full day/night, store breakpoint
+            if (abs(breakpoints[breakpoints.size() - 1] - pos) > MIN_LENGTH) {
+                breakpoints.push_back(++last_pos);
+                update_data(last_pos);
+                TRACE(true, "* day_or_night(): ### breakpoint found: %d\n", last_pos);
+            }
+            // Restart to this point
+            last_br = brightness;
+            last_pos = pos;
+            dif_streak = 0;
+        }
+    }
 }
 //------------------------------------------------------------------------------
 void close(int size, Mat &image) {
@@ -599,22 +827,18 @@ void ellipse_fitting(const Mat &input, bool left, Mat &output) {
     RotatedRect ellipse_rect = fitEllipse(contours[index]);
     ellipse(output_ref, ellipse_rect, v_red);
 
+    // Data output
     (left ? left_leaf_vector : right_leaf_vector).push_back(ellipse_rect.angle);
+    if (left)
+        data_out[pos%DATA_OUT_NUM].left_angle = ellipse_rect.angle;
+    else
+        data_out[pos%DATA_OUT_NUM].right_angle = ellipse_rect.angle;
 
     TRACE(c_drawn > 2, "* ellipse_fitting(%d, %s): contours drawn = %d\n", pos,
          (left ? "left" : "right"), c_drawn);
     TRACE(dump, "< ellipse_fitting(%d, %s)\n", pos, left ? "left" : "right");
     DUMP(dump, output/*_ref*/, "Analyzer/ellipses_%d_%s.png", pos, (left ? "left" : "right"));
     DUMP(dump, contours_out, "Analyzer/contours_%d_%s.png", pos, (left ? "left" : "right"));
-}
-//------------------------------------------------------------------------------
-void dump_data() {
-    uint limit = min(left_leaf_vector.size(), right_leaf_vector.size());
-
-    for (uint i = 0; i < limit; i++) {
-        left_leaf_of << left_leaf_vector[i] << endl;
-        right_leaf_of << right_leaf_vector[i] << endl;
-    }
 }
 //------------------------------------------------------------------------------
 void run_better_analyzer_otsu() {
@@ -674,7 +898,6 @@ void run_better_analyzer_otsu() {
         TRACE(dump, "*** run_better_analyzer: %d segundos analizados\n", pos/30);
     }
 
-    dump_data();
     destroyAllWindows();
     TRACE(true, "< run_better_analyzer()\n");
 }
@@ -713,11 +936,14 @@ void run_better_analyzer() {
     for (pos = 0;; pos++) {
         video >> input;
 
-        if (/*pos == 1051 ||*/ input.empty()) break;
+        if (input.empty()) break;
         dump = (pos % 150 == 0 || pos == 49);
 
         // Preprocess image
         preprocess(input, preproc_output);
+
+        // Day or night
+        day_or_night(preproc_output);
 
         // Stretch histogram
         stretch_histogram(preproc_output, stretch_hist_output, stretch_output);
@@ -745,7 +971,6 @@ void run_better_analyzer() {
         ellipse_fitting(left_leaf, true, l_output);
         ellipse_fitting(right_leaf, false, r_output);
 
-
         // Output video feed
         #ifdef VIDEO_OUTPUT
         imshow("thresholding", thresh_output(roi));
@@ -757,11 +982,17 @@ void run_better_analyzer() {
         waitKey(frame_ms);
         #endif
 
+        // Fill data
+        data_out[pos%DATA_OUT_NUM].pos = pos;
+        data_out[pos%DATA_OUT_NUM].night = static_cast<int>(night);
+        if (pos % DATA_OUT_NUM == DATA_OUT_NUM - 1)
+            dump_out_data();
+
         TRACE(dump, "*** run_better_analyzer: %d segundos analizados\n", pos/30);
     }
 
-    dump_data();
     destroyAllWindows();
+    data_of.close();
     TRACE(true, "< run_better_analyzer()\n");
 }
 //------------------------------------------------------------------------------
