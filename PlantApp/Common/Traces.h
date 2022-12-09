@@ -3,15 +3,65 @@
 
 #ifdef TRACE_ON
 
-#define TRACE(...) { fprintf (stdout, __VA_ARGS__); }
-#define TRACE_ERR(...) { fprintf (stderr, __VA_ARGS__); }
-#define TRACE_IF(b, ...) { if (b) fprintf (stderr, __VA_ARGS__); }
-#define DUMP(b, mat_, ...) { if (b) { \
-    char buf_[256]; \
-    std::sprintf(buf_, __VA_ARGS__); \
-    imwrite(std::string(DUMP_WD) + std::string(buf_), mat_); \
+#define N_TRACE (150)
+
+#define TRACE(...) { \
+    char buf__[256]; \
+    std::sprintf(buf__, __VA_ARGS__); \
+    std::cout << std::string(buf__) << std::endl; \
+}
+
+#define TRACE_ERR(...) { \
+    char buf__[256]; \
+    std::sprintf(buf__, __VA_ARGS__); \
+    std::cout << std::string(buf__) << std::endl; \
+}
+
+#define TRACE_IF(b__, ...) { \
+    if (b__) { \
+        char buf__[256]; \
+        std::sprintf(buf__, __VA_ARGS__); \
+        std::cout << std::string(buf__) << std::endl; \
     } \
 }
+
+#define TRACE_P(pos__, ...) { \
+    if (pos__ % N_TRACE == 0) { \
+        char buf__[256]; \
+        std::sprintf(buf__, __VA_ARGS__); \
+        std::cout << std::string(buf__) << std::endl; \
+    } \
+}
+
+#define DUMP(pos__, mat__, ...) { \
+    if (pos__ % N_TRACE == 0) { \
+        char buf__[256]; \
+        std::sprintf(buf__, __VA_ARGS__); \
+        imwrite(std::string(DUMP_WD) + std::string(buf__), mat__); \
+    } \
+}
+
+#define DUMP_IF(b__, mat__, ...) { \
+    if (b__) { \
+        char buf__[256]; \
+        std::sprintf(buf__, __VA_ARGS__); \
+        imwrite(std::string(DUMP_WD) + std::string(buf__), mat__); \
+    } \
+}
+
+#else
+
+#define TRACE(...) ;
+#define TRACE_ERR(...) { \
+    char buf__[256]; \
+    std::sprintf(buf__, __VA_ARGS__); \
+    std::cerr << std::string(buf__) << std::endl; \
+}
+#define TRACE_IF(b__, ...) ;
+#define TRACE_P(pos__, ...) ;
+
+#define DUMP(b__, mat__, ...) ;
+#define DUMP_IF(b__, mat__, ...) ;
 
 #endif
 

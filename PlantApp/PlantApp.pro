@@ -22,32 +22,52 @@ DEFINES += QT_DEPRECATED_WARNINGS
 # You can also select to disable deprecated APIs only up to a certain version of Qt.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-CONFIG += c++
+CONFIG += c++17
 
 SOURCES += \
-        AnalyzerManager.cpp \
-        Common/Common.cpp \
+    Common/Enums.cpp \
+    Common/Utils.cpp \
+        Processing/AnalyzerManager.cpp \
+        Processing/PreProcessing.cpp \
+        Processing/DayOrNight.cpp \
+        Processing/Thresholding.cpp \
+        Processing/LeafSegmentation.cpp \
+        Processing/EllipseFitting.cpp \
+        Presentation/MainWindow.cpp \
+        Presentation/ROIWindow.cpp \
         main.cpp \
-        MainWindow.cpp
 
 HEADERS += \
-        AnalyzerManager.h \
-        Common/Common.h \
+        Common/Enums.h \
+        Common/Histograms.h \
         Common/Traces.h \
-        MainWindow.h
+        Common/Utils.h \
+        Processing/AnalyzerManager.h \
+        Processing/PreProcessing.h \
+        Processing/DayOrNight.h \
+        Processing/Thresholding.h \
+        Processing/LeafSegmentation.h \
+        Processing/EllipseFitting.h \
+        Presentation/MainWindow.h \
+        Presentation/ROIWindow.h
 
 FORMS += \
-        MainWindow.ui
+      Presentation/MainWindow.ui
 
-INCLUDEPATH += "C:\OpenCV\OpenCV4.1.1G\include" \
-               "Common/"
+INCLUDEPATH += \
+            "C:\OpenCV\OpenCV4.1.1G\include" \
+            "Common/" \
+            "Processing/" \
+            "Presentation/"
 
-LIBS += -L"C:\OpenCV\OpenCV4.1.1G\lib"\
- -llibopencv_world411
+LIBS += \
+     -L"C:\OpenCV\OpenCV4.1.1G\lib" \
+     -llibopencv_world411
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
-DEFINES += TRACE_ON
+DEFINES += TRACE_ON \
+           OTSU

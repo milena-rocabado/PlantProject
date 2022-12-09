@@ -11,9 +11,9 @@
 using namespace std;
 using namespace cv;
 
-//#define VIDEO_OUTPUT
-//#define OTSU
-#define INITIAL_POS 0
+#define VIDEO_OUTPUT
+#define OTSU
+#define INITIAL_POS 3000
 
 // INPUT
 static VideoCapture video;
@@ -134,6 +134,7 @@ typedef struct {
 } data_out_t;
 static constexpr int DATA_OUT_NUM { TIME_STREAK };
 static data_out_t data_out[DATA_OUT_NUM];
+static VideoWriter stem_video;
 /*
  * Idea: ir almacenando info en estructura, cuando se llene volcar. La deteccion
  * de un breakpoint se retrasa maximo TIME_STREAK, por tanto almacenar TIME_STREAK
@@ -144,7 +145,8 @@ static data_out_t data_out[DATA_OUT_NUM];
 //------------------------------------------------------------------------------
 void initialize() {
     // Input initialization
-    string file = wd + "climbing_bean_project3_leaf_folding.AVI";
+    // string file = wd + "climbing_bean_project3_leaf_folding.AVI";
+    string file = wd + "Good/1_NPOL_lat.AVI";
     video.open(file);
     assert(video.isOpened());
 
@@ -177,6 +179,15 @@ void initialize() {
     data_of.open(DUMP_WD + string("Analyzer/data_output.csv"),
                        ofstream::out | ofstream::trunc);
     data_of << "Frame,Day/Night,Left_leaf_angle,Right_leaf_angle" << endl;
+
+    //OJO
+    TRACE(true, "* initialize(): initializing video writer\n", frame_ms);
+    stem_video.open(wd + "Ejemplos/Analyzer/stem_out.avi",
+                    static_cast<int>(video.get(CAP_PROP_FOURCC)),
+                    video.get(CAP_PROP_FPS),
+                    Size(static_cast<int>(video.get(CAP_PROP_FRAME_WIDTH)),
+                         static_cast<int>(video.get(CAP_PROP_FRAME_HEIGHT))),
+                    true);
 
     TRACE(true, "* initialize(): roi(%d x %d)\n",
           roi_sz.width, roi_sz.height);
@@ -520,7 +531,7 @@ void day_or_night(const Mat &input) {
 
         // Tolerance surpassed TIME_STREAK times
         if (dif_streak == TIME_STREAK) {
-            TRACE(true, "* day_or_night(): TIME_STREAK: %d\n", last_pos+1);
+            TRACE(true, "* day_or_night(): TIME_STREAK at pos %d\n", last_pos+1);
             // If last period is long enough to be full day/night, store breakpoint
             if (abs(breakpoints[breakpoints.size() - 1] - pos) > MIN_LENGTH) {
                 breakpoints.push_back(++last_pos);
@@ -614,6 +625,86 @@ void hide_plant_pot(Mat &output) {
     rectangle(output, pot, LS_COLOR, FILLED);
 }
 //------------------------------------------------------------------------------
+/*
+ * Idea: en vez de otro algoritmo, usar el mismo pero, reutilizar el mismo stem para
+ * varios frames-> loteria(y)
+ * pero cuando falla, son 5-10 ?frames seguidos y despeus vuelve a ir bien
+ * De todas formas la estrategia a debuscar camino no interrumpido hasta el suelo
+ * no va a funcionar cuando la hoja se superpone al s uelo, q son las mismas
+ * circunstancias en l asq falla ahora.
+*/
+void leaf_segmentation_2(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem) {
+    TRACE(dump, "> leaf_segmentation_2(%d)\n", pos);
+
+    // Whether any stem px has been found
+    bool found { false };
+    // Whether next stem px to be found is first
+    bool first { true };
+    // Position of first stem px found in last row
+    int last { 0 };
+    // Current row index
+    int row;
+
+    auto is_stem = [](Vec3b px) -> bool {
+        return px[0] == 0 && px[1] == 0 && px[2] == 0;
+    };
+
+    // Copy input to output images
+    cvtColor(input, stem, COLOR_GRAY2BGR);
+    // cvtColor(input, r_output, COLOR_GRAY2BGR);
+    // cvtColor(input, l_output, COLOR_GRAY2BGR);
+    r_output = input.clone();
+    l_output = input.clone();
+
+    // Reference to region of interest
+    Rect mask(roi_corner, roi_sz);
+    rectangle(stem, mask, v_red);
+
+    Mat ref = stem(mask);
+    Mat l_ref = l_output(mask);
+    Mat r_ref = r_output(mask);
+
+    // Initial loop
+    for (row = INITIAL_POS; !found && first && row < ref.rows; row++) {
+        for (int j = 0; j < ref.cols; j++) {
+            Vec3b &pixel = ref.at<Vec3b>(row, j);
+            if ((found = is_stem(pixel))) {
+                // Color stem red
+                pixel = v_red;
+                TRACE(dump, "* leaf_segmentation(%d): pixel found: (%d, %d)\n", pos, row, j);
+                if (first) {
+                    TRACE(dump, "* leaf_segmentation(%d): it's the first!!\n", pos);
+                    // Color over leaves
+                    color_leaves({j, row}, l_ref, r_ref);
+                    // Update last position
+                    last = j;
+                    // Next stem pxs found are not first
+                    first = false;
+                } else {
+                    TRACE(dump, "* leaf_segmentation(%d): not the first\n", pos);
+                    // Color over stem px in r_ref
+                    r_ref.at<uchar>(row, j) = LS_COLOR;
+                    // for l_ref, color_leaves covers all stem pxs
+                }
+            } else {
+                // Found end of stem (first stem px has been found before)
+                if (!first) {
+                    TRACE(dump, "* leaf_segmentation(%d): first has been found before, therefore end of stem\n", pos);
+                    break;
+                }
+            }
+        }
+        if (first) { // First not found
+            TRACE(dump, "* leaf_segmentation(%d): end of row, first pixel not found: (%d)\n", pos, row);
+            // Cover whole row
+            color_leaves({-1, row}, l_ref, r_ref);
+        }
+    }
+
+    TRACE(dump, "* leaf_segmentation(%d): first loop end, row = %d\n", pos, row);
+    TRACE(dump, "< leaf_segmentation_2(%d)\n", pos);
+}
+//------------------------------------------------------------------------------
 void leaf_segmentation(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem) {
     TRACE(dump, "> leaf_segmentation(%d)\n", pos);
 
@@ -655,7 +746,7 @@ void leaf_segmentation(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem
 
     TRACE(dump, "* leaf_segmentation(%d): first loop start\n", pos);
     // To start, search whole row
-    for (i = INITIAL_POS; !found && first && i < ref.rows; i++) {
+    for (i = 0; !found && first && i < ref.rows; i++) {
         for (int j = 0; j < ref.cols; j++) {
             Vec3b &pixel = ref.at<Vec3b>(i, j);
             if ((found = is_stem(pixel))) {
@@ -704,7 +795,7 @@ void leaf_segmentation(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem
             // Color over leaves
             color_leaves({last, i}, l_ref, r_ref);
 
-            // Keep searching left and right
+            // Found, but keep searching left and right
             bool l { true }, r { true };
             for (int k = 1; (l || r) && k < MAX_WIDTH; k++) {
                 if (l) {
@@ -745,7 +836,7 @@ void leaf_segmentation(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem
                 px_l = v_red;
                 // Color over leaves
                 color_leaves({last, i}, l_ref, r_ref);
-                // Keep searching left
+                // Found, but keep searching left
                 for (int k = 1; k < MAX_WIDTH; k++) {
                     Vec3b &px = ref.at<Vec3b>(i, last - k);
                     if (is_stem(px)){
@@ -782,18 +873,24 @@ void leaf_segmentation(const Mat &input, Mat &l_output, Mat &r_output, Mat &stem
 
         // For rows where stem disappears, not found after searching within radius
         if (! found) {
+            TRACE(dump, "* leaf_segmentation(%d): row %d, not found with radius %d\n", pos, i, radius);
             radius += 2;
-            // Cover whole row
+            // Cover whole row -> not needed because close operation cleans
+            // leaf and stem residues
             // color_leaves({-1, i}, l_ref, r_ref);
         } else
             // Stem found again
-            radius = 1; // maybe 2?
+            radius = 1;
     }
 
     hide_plant_pot(l_output);
     hide_plant_pot(r_output);
 
     DUMP(dump, stem, "Analyzer/stem_%d.png", pos);
+    // OJO
+    putText(stem, to_string(pos), Point(0, input.rows), FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
+    stem_video << stem;
+
     DUMP(dump, l_output, "Analyzer/left_%d.png", pos);
     DUMP(dump, r_output, "Analyzer/right_%d.png", pos);
     TRACE(dump, "< leaf_segmentation(%d)\n", pos);
@@ -929,15 +1026,15 @@ void run_better_analyzer() {
         TRACE(true, "* run_better_analyzer(): setting video position at %d\n", initial_pos);
         video.set(CAP_PROP_POS_FRAMES, initial_pos);
         TRACE(true, "* run_better_analyzer(): position set\n");
-        pos = initial_pos;
     }
+    pos = initial_pos;
 
     TRACE(true, "* run_better_analyzer(): starting loop...\n");
-    for (pos = 0;; pos++) {
+    for (;; pos++) {
         video >> input;
 
         if (input.empty()) break;
-        dump = (pos % 150 == 0 || pos == 49);
+        dump = (pos % 150 == 0 || pos == 3517);
 
         // Preprocess image
         preprocess(input, preproc_output);
@@ -964,8 +1061,8 @@ void run_better_analyzer() {
         leaf_segmentation(thresh_output, left_leaf, right_leaf, stem);
 
         // Ellipse fitting
-        // close(5, left_leaf); // clean to avoid unwanted contours
-        // close(5, right_leaf); // clean to avoid unwanted contours
+        close(5, left_leaf); // clean to avoid unwanted contours
+        close(5, right_leaf); // clean to avoid unwanted contours
         cvtColor(thresh_output, l_output, COLOR_GRAY2BGR);
         cvtColor(thresh_output, r_output, COLOR_GRAY2BGR);
         ellipse_fitting(left_leaf, true, l_output);
@@ -1044,6 +1141,20 @@ void dump_frame(int pos) {
     Mat frame;
     video >> frame;
     DUMP(true, frame, "frame_%d.png", pos);
+}
+//------------------------------------------------------------------------------
+void dump_frames(int pos, int n) {
+    // Input initialization
+    string file = wd + "climbing_bean_project3_leaf_folding.AVI";
+    video.open(file);
+    assert(video.isOpened());
+
+    video.set(CAP_PROP_POS_FRAMES, pos);
+    Mat frame;
+    for (int i = 0; i < n; i++) {
+        video >> frame;
+        DUMP(true, frame, "frame_%d.png", pos+i);
+    }
 }
 //------------------------------------------------------------------------------
 /*
