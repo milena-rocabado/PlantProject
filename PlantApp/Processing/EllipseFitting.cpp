@@ -39,7 +39,7 @@ void EllipseFitting::fitEllipse_(const cv::Mat &input, cv::Mat &output,
 }
 //------------------------------------------------------------------------------
 void EllipseFitting::process(const cv::Mat &leaf, const cv::Mat &canvas,
-                             cv::Mat ellipseDrawing,
+                             cv::Mat &ellipseDrawing,
                              float &angle, common::Side side) {
     TRACE_P(pos_, "> EllipseFitting::process(%d, %s)\n", pos_,
             side == common::LEFT ? "left" : "right");

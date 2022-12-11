@@ -17,14 +17,14 @@ void LeafSegmentation::colorOverLeaves_(const cv::Point &point, cv::Mat &left, c
 }
 //------------------------------------------------------------------------------
 void LeafSegmentation::hidePlantPot_(cv::Mat &image) {
-    cv::Rect pot(0, POT_HEIGHT, image.cols, image.rows - POT_HEIGHT - TIMEBAR_HEIGHT);
+    cv::Rect pot(0, POT_POSITION, image.cols, image.rows - POT_POSITION - TIMEBAR_HEIGHT);
     cv::rectangle(image, pot, BG_COLOR, cv::FILLED);
 }
 //------------------------------------------------------------------------------
 void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &left, cv::Mat &stem) {
     assert(!roi_.empty());
 
-    TRACE("> LeafSegmentation::process(%d)\n", pos_);
+    TRACE_P(pos_, "> LeafSegmentation::process(%d)\n", pos_);
 
     // Whether any stem px has been found
     bool found { false };
@@ -63,9 +63,9 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
             ref.cols, ref.rows);
 
     // Stop at this row
-    int maxRow = ref.rows - POT_HEIGHT;
+    int maxRow = POT_POSITION - roi_.y;
 
-    TRACE_P(pos_,"* LeafSegmentation::process(%d): first loop start\n", pos_);
+    TRACE_P(pos_,"* LeafSegmentation::process(%d): first loop start, maxRow = %d\n", pos_, maxRow);
     // To start, search whole row
     for (row = 0; !found && first && row < maxRow; row++) {
         for (int col = 0; col < ref.cols; col++) {
@@ -86,7 +86,7 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
                     TRACE_P(pos_,"* LeafSegmentation::process(%d): not the first\n", pos_);
                     // Color over stem px in r_ref
                     rRef.at<uchar>(row, col) = BG_COLOR;
-                    // for l_ref, color_leaves covers all stem pxs
+                    // for l_ref, colorOverLeaves_ covers all stem pxs
                 }
             } else {
                 // Found end of stem (first stem px has been found before)
@@ -143,8 +143,10 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
                 }
             }
 
-            continue; // next row
-        } else pixel = MAGENTA;
+            // Finished row, next
+            continue;
+        } else // Next pixel not directly under
+            pixel = MAGENTA;
 
         // Search near last
         for (int j = 1; !found && j <= radius; j++) {
@@ -167,7 +169,8 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
                         lRef.at<uchar>(row, last - k) = BG_COLOR;
                     } else break; // stop searching left
                 }
-                continue; // next row
+                // Done, next row
+                break;
             } else px_l = CYAN;
 
             // To the right
@@ -188,7 +191,8 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
                         rRef.at<uchar>(row, last + k) = BG_COLOR;
                     } else break; // stop searching right
                 }
-                continue; // next row
+                // Done, next row
+                break;
             } else px_r = GREEN;
         }
 

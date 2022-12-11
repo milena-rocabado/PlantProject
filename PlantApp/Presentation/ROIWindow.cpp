@@ -14,7 +14,7 @@ void ROIWindow::setImage(const cv::Mat &image) {
 cv::Rect ROIWindow::getROI() {
     TRACE(">ROIWindow::getROI()");
     cv::Rect roi = cv::selectROI(WIN_NAME, image_);
-    TRACE("<ROIWindow::getROI(): Selection done!");
+    TRACE("*ROIWindow::getROI(): Selection done!");
     cv::destroyWindow(WIN_NAME);
     TRACE("<ROIWindow::getROI()");
     return roi;

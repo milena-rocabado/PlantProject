@@ -18,7 +18,7 @@ private:
     static constexpr int MAX_WIDTH { 6 };
 
 #warning POT_HEIGHT should not be a constant
-    static constexpr int POT_HEIGHT { 567 };
+    static constexpr int POT_POSITION { 567 };
     static constexpr int TIMEBAR_HEIGHT { 20 };
 
     inline static const cv::Vec3b RED     {   0,   0, 255 };

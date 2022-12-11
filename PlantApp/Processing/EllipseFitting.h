@@ -10,7 +10,7 @@ class EllipseFitting
 public:
     EllipseFitting() {}
 
-    void process(const cv::Mat &leaf, const cv::Mat &canvas, cv::Mat ellipseDrawing,
+    void process(const cv::Mat &leaf, const cv::Mat &canvas, cv::Mat &ellipseDrawing,
                  float &angle, common::Side side);
 
     void setInitialPosition(int pos) { pos_ = pos; }

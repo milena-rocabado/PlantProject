@@ -21,8 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     disableElements_();
 }
 //------------------------------------------------------------------------------
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     delete ui;
 }
 //------------------------------------------------------------------------------
@@ -66,6 +65,10 @@ void MainWindow::setErrorState(QString errorMsg) {
     QMessageBox errorMsgBox;
     errorMsgBox.critical(this, "Error", errorMsg);
     errorMsgBox.setFixedSize(500,200);
+}
+//------------------------------------------------------------------------------
+void MainWindow::updateProgress(double progress) {
+    // nada por ahora
 }
 //------------------------------------------------------------------------------
 // SLOTS -----------------------------------------------------------------------
@@ -118,6 +121,10 @@ void MainWindow::on_pbExaminarOutput_clicked() {
 void MainWindow::on_pbProcess_clicked() {
     TRACE(">MainWindow::on_pbProcess_clicked()");
 
+//    if (ui->chkOutput->checkState() == Qt::Checked) {
+//        manager_->setSubscriber(this);
+//    }
+
     if (manager_->initialize()) {
         manager_->run();
     } else {
@@ -133,4 +140,8 @@ void MainWindow::on_pbSetROI_clicked() {
     roiWin_->setImage(manager_->getFrameFromVideo());
     manager_->setROI(roiWin_->getROI());
     TRACE("<MainWindow::on_pbSetROI_clicked()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_chkOutput_stateChanged(int state) {
+    manager_->setVideoOutputFlag(state == Qt::Checked);
 }

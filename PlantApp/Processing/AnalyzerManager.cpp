@@ -6,6 +6,17 @@
 #include "Utils.h"
 
 //------------------------------------------------------------------------------
+AnalyzerManager::Subscriber::~Subscriber() {}
+//------------------------------------------------------------------------------
+const std::string AnalyzerManager::WIN_NAMES[] {
+    "stem",
+    "left_leaf",
+    "right_leaf",
+    "left_ellipses",
+    "right_ellipses",
+    "thresholding"
+};
+//------------------------------------------------------------------------------
 AnalyzerManager::AnalyzerManager()
     : preProcessing_(std::make_unique<PreProcessing>())
     , dayOrNight_(std::make_unique<DayOrNight>())
@@ -92,6 +103,30 @@ cv::Mat AnalyzerManager::getFrameFromVideo() {
     return frame;
 }
 //------------------------------------------------------------------------------
+void AnalyzerManager::initializeWindows_() {
+    int rows {2}, cols {3};
+    int padding = 10;
+    int HSpacing = roi_.width;
+    int VSpacing = roi_.height + 10;
+
+    for (int i = 0; i < rows; ++i) {
+        for (int j = 0; j < cols; ++j) {
+            cv::namedWindow(WIN_NAMES[i*cols + j]);
+            cv::moveWindow(WIN_NAMES[i*cols + j],
+                    j * HSpacing + (j+1) * padding,
+                    i * VSpacing + (i+1) * padding);
+            cv::resizeWindow(WIN_NAMES[i*cols + j], roi_.width, roi_.height);
+        }
+    }
+
+    outputs_[0] = &stem_;
+    outputs_[1] = &leftLeaf_;
+    outputs_[2] = &rightLeaf_;
+    outputs_[3] = &leftEllipse_;
+    outputs_[4] = &rightEllipse_;
+    outputs_[5] = &threshOut_;
+}
+//------------------------------------------------------------------------------
 bool AnalyzerManager::initialize() {
     assert(video_.isOpened());
 
@@ -146,10 +181,16 @@ bool AnalyzerManager::initialize() {
         outDataFs_ << "Frame,Day/Night,Left_leaf_angle,Right_leaf_angle" << std::endl;
     }
 
+    // Prepare video output
+    if (videoOutputFlag_) {
+        msecs_ = static_cast<int>(1000.0 / video_.get(cv::CAP_PROP_FPS));
+        initializeWindows_();
+    }
+
     return true;
 }
 //------------------------------------------------------------------------------
-void AnalyzerManager::dumpDataToStream() {
+void AnalyzerManager::dumpDataToStream_() {
     int index = initPos_ % common::CONTAINER_SIZE;
     for (int i = 0; i < common::CONTAINER_SIZE; ++i) {
         outDataFs_ << outDataContainer_[index].pos << ","
@@ -160,16 +201,31 @@ void AnalyzerManager::dumpDataToStream() {
     }
 }
 //------------------------------------------------------------------------------
+void AnalyzerManager::dumpVideoOutput_() {
+    for (int i = 0; i < WIN_NUM; i++) {
+         cv::imshow(WIN_NAMES[i], (*outputs_[i])(roi_));
+    }
+    cv::waitKey(msecs_ - 15);
+}
+//------------------------------------------------------------------------------
+void AnalyzerManager::updateSubscriber_(int pos) {
+    double progress = pos / video_.get(cv::CAP_PROP_FRAME_COUNT);
+    subscriber_->updateProgress(progress);
+}
+//------------------------------------------------------------------------------
 void AnalyzerManager::run() {
     assert(video_.isOpened());
 
-    TRACE("AnalyzerManager::run: loop begin");
+    TRACE("AnalyzerManager::run(): loop begin");
+
+
     for (pos_ = initPos_; pos_ <= endPos_; pos_++) {
+
         // Extract frame
         video_ >> input_;
 
         if (input_.empty()) {
-            TRACE_ERR("* AnalyzerManager::run: unexpected end at position %d", pos_);
+            TRACE_ERR("* AnalyzerManager::run(): unexpected end at position %d", pos_);
             return;
         }
 
@@ -199,6 +255,20 @@ void AnalyzerManager::run() {
 
         // Dump data to file stream
         if (index == common::CONTAINER_SIZE - 1)
-            dumpDataToStream();
+            dumpDataToStream_();
+        // Update subscriber
+        if (pos_ % (5 * static_cast<int>(video_.get(cv::CAP_PROP_FPS))) == 0) {
+            TRACE("* AnalyzerManager::run(): %d seconds analyzed",
+                  pos_ / (5 * static_cast<int>(video_.get(cv::CAP_PROP_FPS))));
+            if (subscriber_)
+                updateSubscriber_(pos_);
+        }
+
+        // Video output
+        if (videoOutputFlag_) {
+            dumpVideoOutput_();
+        }
     }
+
+    outDataFs_.close();
 }

@@ -4,20 +4,21 @@
 #include <QMainWindow>
 #include <memory>
 
-class AnalyzerManager;
+#include "AnalyzerManager.h"
+
 class ROIWindow;
 
 namespace Ui {
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
+class MainWindow : public QMainWindow, AnalyzerManager::Subscriber
 {
     Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-    ~MainWindow();
+    ~MainWindow() override;
 
 private slots:
     void on_pbExaminarInput_clicked();
@@ -34,6 +35,8 @@ private slots:
 
     void on_pbSetROI_clicked();
 
+    void on_chkOutput_stateChanged(int arg1);
+
 private:
     void disableElements_();
 
@@ -42,6 +45,8 @@ private:
     void resetSpnValues_();
 
     void setErrorState(QString errorMsg);
+
+    void updateProgress(double progress) override;
 
 private:
     Ui::MainWindow *ui;

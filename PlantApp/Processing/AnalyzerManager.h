@@ -11,6 +11,9 @@
 #include "LeafSegmentation.h"
 #include "EllipseFitting.h"
 
+// noooooooo
+#include <chrono>
+
 class AnalyzerManager
 {
 public:
@@ -34,21 +37,43 @@ public:
 
     void setStartInterval(common::Interval interval) { interval_ = interval; }
 
-    bool setOutputDirectory(std::string path);
+    void setVideoOutputFlag(bool flag) { videoOutputFlag_ = flag; }
 
     std::string getOutputDirectory();
+
+    bool setOutputDirectory(std::string path);
 
     std::string getOutputFilename();
 
     cv::Mat getFrameFromVideo();
 
+    // Subscriber
+    class Subscriber {
+    public:
+        virtual ~Subscriber();
+
+        virtual void updateProgress(double progress) = 0;
+    };
+
+    void setSubscriber(Subscriber *sub) { subscriber_ = sub; }
+
 private:
-    void dumpDataToStream();
+    void dumpDataToStream_();
+
+    void dumpVideoOutput_();
+
+    void updateSubscriber_(int pos);
+
+    void initializeWindows_();
 
 private:
     // Constants ---------------------------------------------------------------
 
     static inline constexpr int TIME_BAR_HEIGHT { 20 };
+
+    static constexpr int WIN_NUM { 6 };
+
+    static const std::string WIN_NAMES[WIN_NUM];
 
 private:
     // Members -----------------------------------------------------------------
@@ -73,6 +98,19 @@ private:
     // Current interval (day/night)
     common::Interval interval_;
 
+    //
+    bool videoOutputFlag_;
+    int msecs_;
+    // Array of mats that will be shown in video output;
+    cv::Mat *outputs_[WIN_NUM];
+
+    //
+    Subscriber *subscriber_;
+
+    // nooo
+    std::chrono::high_resolution_clock::time_point start;
+    std::chrono::high_resolution_clock::time_point point;
+
     // Containers --------------------------------------------------------------
 
     // Frame input from video
@@ -93,6 +131,7 @@ private:
     common::OutputDataContainer outDataContainer_;
 
     // Stages ------------------------------------------------------------------
+
     std::unique_ptr<PreProcessing> preProcessing_;
     std::unique_ptr<DayOrNight> dayOrNight_;
     std::unique_ptr<Thresholding> thresholding_;
