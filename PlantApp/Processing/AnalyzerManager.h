@@ -21,15 +21,17 @@ public:
 
     bool setInputPath(std::string inputPath);
 
+    bool setOutputDirectory(std::string path);
+
     bool initialize();
 
     void run();
 
-    // Aux Functions -----------------------------------------------------------
-
-    int getMaxFrames();
+    // Setter functions --------------------------------------------------------
 
     void setROI(cv::Rect roi) { roi_ = roi; }
+
+    void setPotPosition(int pos);
 
     void setInitialPosition(int initPos) { initPos_ = initPos; }
 
@@ -39,15 +41,23 @@ public:
 
     void setVideoOutputFlag(bool flag) { videoOutputFlag_ = flag; }
 
-    std::string getOutputDirectory();
+    // Getter functions --------------------------------------------------------
 
-    bool setOutputDirectory(std::string path);
+    cv::Rect getROI() { return roi_; }
+
+    int getMaxFrames();
+
+    std::string getOutputDirectory();
 
     std::string getOutputFilename();
 
     cv::Mat getFrameFromVideo();
 
-    // Subscriber
+    int getPotPosition();
+
+    void resetROI();
+
+    // Subscriber --------------------------------------------------------------
     class Subscriber {
     public:
         virtual ~Subscriber();
@@ -98,18 +108,14 @@ private:
     // Current interval (day/night)
     common::Interval interval_;
 
-    //
+    // For video output
     bool videoOutputFlag_;
     int msecs_;
     // Array of mats that will be shown in video output;
     cv::Mat *outputs_[WIN_NUM];
 
-    //
+    // For progress updates
     Subscriber *subscriber_;
-
-    // nooo
-    std::chrono::high_resolution_clock::time_point start;
-    std::chrono::high_resolution_clock::time_point point;
 
     // Containers --------------------------------------------------------------
 

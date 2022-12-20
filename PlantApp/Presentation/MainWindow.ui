@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>456</width>
-    <height>372</height>
+    <height>539</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -16,7 +16,7 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
-     <widget class="QGroupBox" name="groupBox">
+     <widget class="QGroupBox" name="gbInput">
       <property name="title">
        <string>Select input video:</string>
       </property>
@@ -35,122 +35,156 @@
      </widget>
     </item>
     <item>
-     <widget class="QGroupBox" name="groupBox_2">
+     <widget class="QGroupBox" name="gbOutput">
+      <property name="title">
+       <string>Select output folder:</string>
+      </property>
+      <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="4,1">
+       <item>
+        <widget class="QLineEdit" name="lneOutputPath"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="pbExaminarOutput">
+         <property name="text">
+          <string>Examinar...</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item>
+     <widget class="QGroupBox" name="gbConfig">
       <property name="title">
        <string>Configuration</string>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QPushButton" name="pbSetROI">
+        <widget class="QPushButton" name="pbCurrentConfig">
          <property name="text">
-          <string>Seleccionar región de interés</string>
+          <string>Show current configuration</string>
          </property>
         </widget>
        </item>
        <item>
-        <layout class="QGridLayout" name="gridLayout" columnstretch="1,3,1">
-         <item row="0" column="1">
-          <widget class="QSpinBox" name="spnInitPos"/>
-         </item>
-         <item row="1" column="1">
-          <widget class="QSpinBox" name="spnEndPos"/>
-         </item>
-         <item row="1" column="2">
-          <widget class="QLabel" name="lblFrames2">
-           <property name="text">
-            <string>frames</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="lblEndPos">
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
-           </property>
-           <property name="text">
-            <string>End position:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QLabel" name="lblFrames1">
-           <property name="text">
-            <string>frames</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="0">
-          <widget class="QLabel" name="lblInit">
-           <property name="layoutDirection">
-            <enum>Qt::LeftToRight</enum>
-           </property>
-           <property name="text">
-            <string>Initial position:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QPushButton" name="pbReset">
-           <property name="text">
-            <string>Reset values</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QGroupBox" name="gbROI">
+         <property name="title">
+          <string>Region of Interest</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QPushButton" name="pbSetROI">
+            <property name="text">
+             <string>Select</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pbResetROI">
+            <property name="text">
+             <string>Reset Region of Interest</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,3,1">
-         <item>
-          <widget class="QLabel" name="lblDayNight">
-           <property name="text">
-            <string>Starting interval:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="cbxDayNight"/>
-         </item>
-         <item>
-          <widget class="QLabel" name="label_2">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QGroupBox" name="gbPosition">
+         <property name="title">
+          <string>Video position</string>
+         </property>
+         <layout class="QGridLayout" name="gridLayout_2" columnstretch="1,3,1">
+          <item row="0" column="2">
+           <widget class="QLabel" name="lblFrames1">
+            <property name="text">
+             <string>frames</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="lblEndPos">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Stop at:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="spnInitPos"/>
+          </item>
+          <item row="1" column="2">
+           <widget class="QLabel" name="lblFrames2">
+            <property name="text">
+             <string>frames</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="spnEndPos"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="lblInit">
+            <property name="layoutDirection">
+             <enum>Qt::LeftToRight</enum>
+            </property>
+            <property name="text">
+             <string>Start at:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QPushButton" name="pbResetPositions">
+            <property name="text">
+             <string>Reset position values</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,3,1">
-         <item>
-          <widget class="QLabel" name="lblOutput">
-           <property name="text">
-            <string>Output folder:</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="lneOutputPath"/>
-         </item>
-         <item>
-          <widget class="QPushButton" name="pbExaminarOutput">
-           <property name="text">
-            <string>Examinar...</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QGroupBox" name="gbInterval">
+         <property name="title">
+          <string>Day/Night</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,3,1">
+          <item>
+           <widget class="QLabel" name="lblDayNight">
+            <property name="text">
+             <string>Starting interval:</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="cbxDayNight"/>
+          </item>
+          <item>
+           <spacer name="horizontalSpacer">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>40</width>
+              <height>20</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>

@@ -27,6 +27,7 @@ CONFIG += c++17
 SOURCES += \
     Common/Enums.cpp \
     Common/Utils.cpp \
+    Presentation/ConfigDisplayWindow.cpp \
         Processing/AnalyzerManager.cpp \
         Processing/PreProcessing.cpp \
         Processing/DayOrNight.cpp \
@@ -42,6 +43,7 @@ HEADERS += \
         Common/Histograms.h \
         Common/Traces.h \
         Common/Utils.h \
+        Presentation/ConfigDisplayWindow.h \
         Processing/AnalyzerManager.h \
         Processing/PreProcessing.h \
         Processing/DayOrNight.h \

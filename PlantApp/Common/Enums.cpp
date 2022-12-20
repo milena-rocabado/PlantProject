@@ -7,7 +7,7 @@ Interval operator!(Interval interval) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Interval& interval) {
-    return os << (interval == DAY ? "day" : "night");
+    return os << (interval == DAY ? "Day" : "Night");
 }
 
 

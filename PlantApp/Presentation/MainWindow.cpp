@@ -5,9 +5,13 @@
 #include <QFileDialog>
 #include <QMessageBox>
 
+#include <string>
+
 #include "AnalyzerManager.h"
+#include "Enums.h"
 
 #include "ROIWindow.h"
+#include "ConfigDisplayWindow.h"
 
 #include "Traces.h"
 
@@ -17,8 +21,11 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     manager_ = std::make_unique<AnalyzerManager>();
     roiWin_ = std::make_unique<ROIWindow>();
+    configDisplayWin_ = std::make_unique<ConfigDisplayWindow>();
+
     ui->setupUi(this);
     disableElements_();
+    setCbxValues_();
 }
 //------------------------------------------------------------------------------
 MainWindow::~MainWindow() {
@@ -26,10 +33,12 @@ MainWindow::~MainWindow() {
 }
 //------------------------------------------------------------------------------
 void MainWindow::disableElements_() {
+    ui->pbCurrentConfig->setEnabled(false);
     ui->pbSetROI->setEnabled(false);
+    ui->pbResetROI->setEnabled(false);
     ui->spnInitPos->setEnabled(false);
     ui->spnEndPos->setEnabled(false);
-    ui->pbReset->setEnabled(false);
+    ui->pbResetPositions->setEnabled(false);
     ui->cbxDayNight->setEnabled(false);
     ui->lneOutputPath->setEnabled(false);
     ui->pbExaminarOutput->setEnabled(false);
@@ -46,18 +55,32 @@ void MainWindow::resetSpnValues_() {
     ui->spnEndPos->setValue(max);
 }
 //------------------------------------------------------------------------------
-void MainWindow::enableElements_() {
+void MainWindow::setCbxValues_() {
+    for (int i = 0; i <= common::NIGHT; i++) {
+        std::stringstream ss;
+        ss << static_cast<common::Interval>(i);
+        ui->cbxDayNight->addItem(QString::fromStdString(ss.str()), i);
+    }
+}
+//------------------------------------------------------------------------------
+void MainWindow::resetElements_() {
     resetSpnValues_();
 
+    ui->pbCurrentConfig->setEnabled(true);
     ui->pbSetROI->setEnabled(true);
+    ui->pbResetROI->setEnabled(true);
     ui->spnInitPos->setEnabled(true);
     ui->spnEndPos->setEnabled(true);
-    ui->pbReset->setEnabled(true);
+    ui->pbResetPositions->setEnabled(true);
     ui->cbxDayNight->setEnabled(true);
     ui->lneOutputPath->setEnabled(true);
     ui->pbExaminarOutput->setEnabled(true);
     ui->chkOutput->setEnabled(true);
     ui->pbProcess->setEnabled(true);
+
+    cv::Mat frame = manager_->getFrameFromVideo();
+    roiWin_->setImage(frame);
+    configDisplayWin_->setImage(frame);
 }
 //------------------------------------------------------------------------------
 void MainWindow::setErrorState(QString errorMsg) {
@@ -73,14 +96,11 @@ void MainWindow::updateProgress(double progress) {
 //------------------------------------------------------------------------------
 // SLOTS -----------------------------------------------------------------------
 //------------------------------------------------------------------------------
-void MainWindow::on_pbExaminarInput_clicked() {
-    TRACE("> MainWindow::on_pbExaminarInput_clicked()");
+void MainWindow::on_lneInputPath_textChanged(const QString &text) {
+    TRACE("> MainWindow::on_lneInputPath_textChanged()");
 
-    QString fp = QFileDialog::getOpenFileName(this, "Select input video");
-    ui->lneInputPath->setText(fp);
-
-    if (manager_->setInputPath(fp.toStdString())) {
-        enableElements_();
+    if (manager_->setInputPath(text.toStdString())) {
+        resetElements_();
         ui->lneOutputPath->setText(QString::fromStdString(manager_->getOutputDirectory()));
     } else {
         QMessageBox errorMsgBox;
@@ -88,7 +108,32 @@ void MainWindow::on_pbExaminarInput_clicked() {
         errorMsgBox.setFixedSize(500,200);
     }
 
+    TRACE("< MainWindow::on_lneInputPath_textChanged()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_pbExaminarInput_clicked() {
+    TRACE("> MainWindow::on_pbExaminarInput_clicked()");
+
+    QString fp = QFileDialog::getOpenFileName(this, "Select input video");
+    ui->lneInputPath->setText(fp);
+
     TRACE("< MainWindow::on_pbExaminarInput_clicked()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_pbCurrentConfig_clicked() {
+    TRACE("> MainWindow::on_pbCurrentConfig_clicked()");
+    configDisplayWin_->display(manager_->getROI(), manager_->getPotPosition());
+    TRACE("< MainWindow::on_pbCurrentConfig_clicked()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_pbSetROI_clicked() {
+    TRACE("> MainWindow::on_pbSetROI_clicked()");
+    manager_->setROI(roiWin_->getROI());
+    TRACE("< MainWindow::on_pbSetROI_clicked()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_pbResetROI_clicked() {
+    manager_->resetROI();
 }
 //------------------------------------------------------------------------------
 void MainWindow::on_spnInitPos_valueChanged(int pos) {
@@ -99,27 +144,35 @@ void MainWindow::on_spnEndPos_valueChanged(int pos) {
     manager_->setEndPosition(pos);
 }
 //------------------------------------------------------------------------------
-void MainWindow::on_pbReset_clicked() {
+void MainWindow::on_pbResetPositions_clicked() {
     resetSpnValues_();
 }
 //------------------------------------------------------------------------------
 void MainWindow::on_pbExaminarOutput_clicked() {
-    TRACE(">MainWindow::on_pbExaminarOutput_clicked()");
+    TRACE("> MainWindow::on_pbExaminarOutput_clicked()");
 
     QString fp = QFileDialog::getExistingDirectory(this, "Select output directory");
     ui->lneOutputPath->setText(fp);
 
-    if (manager_->setInputPath(fp.toStdString())) {
-        enableElements_();
-    } else {
-        setErrorState("Could not open input video");
+    TRACE("< MainWindow::on_pbExaminarOutput_clicked()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_lneOutputPath_textChanged(const QString &text) {
+    TRACE("> MainWindow::on_lneOutputPath_textChanged()");
+
+    if (! manager_->setOutputDirectory(text.toStdString())) {
+        setErrorState("Could not open output folder");
     }
 
-    TRACE("<MainWindow::on_pbExaminarOutput_clicked()");
+    TRACE("> MainWindow::on_lneOutputPath_textChanged()");
+}
+//------------------------------------------------------------------------------
+void MainWindow::on_chkOutput_stateChanged(int state) {
+    manager_->setVideoOutputFlag(state == Qt::Checked);
 }
 //------------------------------------------------------------------------------
 void MainWindow::on_pbProcess_clicked() {
-    TRACE(">MainWindow::on_pbProcess_clicked()");
+    TRACE("> MainWindow::on_pbProcess_clicked()");
 
 //    if (ui->chkOutput->checkState() == Qt::Checked) {
 //        manager_->setSubscriber(this);
@@ -132,16 +185,5 @@ void MainWindow::on_pbProcess_clicked() {
                       manager_->getOutputFilename()));
     }
 
-    TRACE("<MainWindow::on_pbProcess_clicked()");
-}
-//------------------------------------------------------------------------------
-void MainWindow::on_pbSetROI_clicked() {
-    TRACE(">MainWindow::on_pbSetROI_clicked()");
-    roiWin_->setImage(manager_->getFrameFromVideo());
-    manager_->setROI(roiWin_->getROI());
-    TRACE("<MainWindow::on_pbSetROI_clicked()");
-}
-//------------------------------------------------------------------------------
-void MainWindow::on_chkOutput_stateChanged(int state) {
-    manager_->setVideoOutputFlag(state == Qt::Checked);
+    TRACE("< MainWindow::on_pbProcess_clicked()");
 }

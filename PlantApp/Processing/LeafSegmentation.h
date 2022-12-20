@@ -6,7 +6,9 @@
 class LeafSegmentation
 {
 public:
-    LeafSegmentation() {}
+    LeafSegmentation();
+
+    void initialize();
 
     void process(const cv::Mat &input, cv::Mat &r_output, cv::Mat &l_output, cv::Mat &stem);
 
@@ -14,11 +16,15 @@ public:
 
     void setROI(const cv::Rect &roi) { roi_ = roi; }
 
+    int getPotPosition() { return potPosition_; }
+
+    void setPotPosition(int pos) { potPosition_ = pos; }
+
+    void setDumpDirectory(std::string dir) { wd_ = dir; }
+
 private:
     static constexpr int MAX_WIDTH { 6 };
-
-#warning POT_HEIGHT should not be a constant
-    static constexpr int POT_POSITION { 567 };
+    static constexpr int DEFAULT_POT_POSITION { 567 };
     static constexpr int TIMEBAR_HEIGHT { 20 };
 
     inline static const cv::Vec3b RED     {   0,   0, 255 };
@@ -29,15 +35,38 @@ private:
     inline static const uchar BG_COLOR { 255 };
 
 private:
+    bool isStem(const cv::Vec3b &px);
+
+    void search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef);
+
     void colorOverLeaves_(const cv::Point &point, cv::Mat &left, cv::Mat &right);
+
     void hidePlantPot_(cv::Mat &image);
+
+    void colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef);
 
 private:
     // Config params
     cv::Rect roi_; // already without timebar
 
-    // Current position
+    // Current position in video input
     int pos_;
+
+    // Vertical position of plant pot
+    int potPosition_;
+    // Horizontal position of end of stem
+    int stemPosition_;
+
+    // Stores stem position for each row
+    std::vector<int> stem_;
+    std::vector<int> lastStem_;
+
+    // Process function called for the first time
+    bool firstProcessing_;
+
+    // Output dump directory
+    std::string wd_;
+
 };
 
 #endif

@@ -6,15 +6,18 @@
 namespace common {
 
 //------------------------------------------------------------------------------
+
 enum Interval {
-    DAY,
-    NIGHT
+    NIGHT,
+    DAY
 };
 
 Interval operator!(Interval interval);
 
 std::ostream& operator<<(std::ostream &os, const Interval &interval);
+
 //------------------------------------------------------------------------------
+
 enum Side {
     LEFT,
     RIGHT

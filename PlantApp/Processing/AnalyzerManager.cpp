@@ -25,8 +25,85 @@ AnalyzerManager::AnalyzerManager()
     , ellipseFitting_(std::make_unique<EllipseFitting>())
 { }
 //------------------------------------------------------------------------------
+void AnalyzerManager::setPotPosition(int pos) {
+    leafSegmentation_->setPotPosition(pos);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+int AnalyzerManager::getMaxFrames() {
+    assert(video_.isOpened());
+
+    return static_cast<int>(video_.get(cv::CAP_PROP_FRAME_COUNT));
+}
+//------------------------------------------------------------------------------
+std::string AnalyzerManager::getOutputDirectory() {
+    assert(video_.isOpened());
+
+    return workingDir_;
+}
+//------------------------------------------------------------------------------
+std::string AnalyzerManager::getOutputFilename() {
+    assert(video_.isOpened());
+
+    return workingDir_ + outDataFn_;
+}
+//------------------------------------------------------------------------------
+cv::Mat AnalyzerManager::getFrameFromVideo() {
+    assert(video_.isOpened());
+
+    cv::Mat frame;
+    video_ >> frame;
+    video_.set(cv::CAP_PROP_POS_FRAMES, 0);
+
+    return frame;
+}
+//------------------------------------------------------------------------------
+int AnalyzerManager::getPotPosition() {
+    return leafSegmentation_->getPotPosition();
+}
+//------------------------------------------------------------------------------
+void AnalyzerManager::resetROI() {
+    assert(video_.isOpened());
+
+    cv::Size inputSize(static_cast<int>(video_.get(cv::CAP_PROP_FRAME_WIDTH)),
+                       static_cast<int>(video_.get(cv::CAP_PROP_FRAME_HEIGHT)));
+    // Initialize ROI
+    cv::Point roiCorner;
+    roiCorner.x = inputSize.width / 3;
+    roiCorner.y = inputSize.height / 3;
+
+    cv::Size roiSize;
+    roiSize.width  = inputSize.width / 3;
+    roiSize.height = static_cast<int>(2.0 * inputSize.height / 3.0)
+            - AnalyzerManager::TIME_BAR_HEIGHT;
+
+    roi_ = cv::Rect(roiCorner, roiSize);
+}
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+bool AnalyzerManager::setOutputDirectory(std::string path) {
+    assert(video_.isOpened());
+
+    int retVal = access(path.c_str(), R_OK | W_OK);
+
+    if (retVal != 0) {
+        if (errno == ENOENT) {
+            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Directory \"%s\" "
+                      "does not exist", path.c_str());
+        }
+        else if (errno == EACCES) {
+            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Access denied to "
+                      "directory \"%s\"", path.c_str())
+        }
+        return false;
+    }
+
+    workingDir_ = path;
+    return true;
+}
+//------------------------------------------------------------------------------
 bool AnalyzerManager::setInputPath(std::string inputPath) {
-    TRACE("> AnalyzerManager::setInputPath");
+    TRACE("> AnalyzerManager::setInputPath(%s)", inputPath.c_str());
 
     bool valid = utils::parseFilePath(inputPath, workingDir_, outDataFn_);
 
@@ -50,57 +127,11 @@ bool AnalyzerManager::setInputPath(std::string inputPath) {
 
     outDataFn_ += ".csv";
 
+    // Set default ROI
+    resetROI();
+
     TRACE("< AnalyzerManager::setInputPath");
     return true;
-}
-//------------------------------------------------------------------------------
-int AnalyzerManager::getMaxFrames() {
-    assert(video_.isOpened());
-
-    return static_cast<int>(video_.get(cv::CAP_PROP_FRAME_COUNT));
-}
-//------------------------------------------------------------------------------
-bool AnalyzerManager::setOutputDirectory(std::string path) {
-    assert(video_.isOpened());
-
-    int retVal = access(path.c_str(), R_OK | W_OK);
-
-    if (retVal != 0) {
-        if (errno == ENOENT) {
-            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Directory \"%s\" "
-                      "does not exist", path.c_str());
-        }
-        else if (errno == EACCES) {
-            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Access denied to "
-                      "direcory \"%s\"", path.c_str())
-        }
-        return false;
-    }
-
-    workingDir_ = path;
-    return true;
-}
-//------------------------------------------------------------------------------
-std::string AnalyzerManager::getOutputDirectory() {
-    assert(video_.isOpened());
-
-    return workingDir_;
-}
-//------------------------------------------------------------------------------
-std::string AnalyzerManager::getOutputFilename() {
-    assert(video_.isOpened());
-
-    return workingDir_ + outDataFn_;
-}
-//------------------------------------------------------------------------------
-cv::Mat AnalyzerManager::getFrameFromVideo() {
-    assert(video_.isOpened());
-
-    cv::Mat frame;
-    video_ >> frame;
-    video_.set(cv::CAP_PROP_POS_FRAMES, 0);
-
-    return frame;
 }
 //------------------------------------------------------------------------------
 void AnalyzerManager::initializeWindows_() {
@@ -133,20 +164,6 @@ bool AnalyzerManager::initialize() {
     cv::Size inputSize(static_cast<int>(video_.get(cv::CAP_PROP_FRAME_WIDTH)),
                        static_cast<int>(video_.get(cv::CAP_PROP_FRAME_HEIGHT)));
 
-    if (roi_.empty()) {
-        // Initialize ROI
-        cv::Point roiCorner;
-        roiCorner.x = inputSize.width / 3;
-        roiCorner.y = inputSize.height / 3;
-
-        cv::Size roiSize;
-        roiSize.width  = inputSize.width / 3;
-        roiSize.height = static_cast<int>(2.0 * inputSize.height / 3.0)
-                - AnalyzerManager::TIME_BAR_HEIGHT;
-
-        roi_ = cv::Rect(roiCorner, roiSize);
-    }
-
     // Initialize stage classes
     preProcessing_->setInitialPosition(initPos_);
     preProcessing_->setInputSize(inputSize);
@@ -166,6 +183,8 @@ bool AnalyzerManager::initialize() {
 
     leafSegmentation_->setInitialPosition(initPos_);
     leafSegmentation_->setROI(roi_);
+    leafSegmentation_->setDumpDirectory(workingDir_ + "Ejemplos/");
+    leafSegmentation_->initialize();
 
     ellipseFitting_->setInitialPosition(initPos_);
     ellipseFitting_->setROI(roi_);
@@ -209,7 +228,7 @@ void AnalyzerManager::dumpVideoOutput_() {
 }
 //------------------------------------------------------------------------------
 void AnalyzerManager::updateSubscriber_(int pos) {
-    double progress = pos / video_.get(cv::CAP_PROP_FRAME_COUNT);
+    double progress = pos / endPos_;
     subscriber_->updateProgress(progress);
 }
 //------------------------------------------------------------------------------
