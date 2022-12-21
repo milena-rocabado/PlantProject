@@ -9,12 +9,12 @@
 AnalyzerManager::Subscriber::~Subscriber() {}
 //------------------------------------------------------------------------------
 const std::string AnalyzerManager::WIN_NAMES[] {
+    "right_leaf",
     "stem",
     "left_leaf",
-    "right_leaf",
-    "left_ellipses",
     "right_ellipses",
     "thresholding"
+    "left_ellipses",
 };
 //------------------------------------------------------------------------------
 AnalyzerManager::AnalyzerManager()
@@ -150,12 +150,12 @@ void AnalyzerManager::initializeWindows_() {
         }
     }
 
-    outputs_[0] = &stem_;
-    outputs_[1] = &leftLeaf_;
-    outputs_[2] = &rightLeaf_;
-    outputs_[3] = &leftEllipse_;
-    outputs_[4] = &rightEllipse_;
-    outputs_[5] = &threshOut_;
+    outputs_[0] = &rightLeaf_;
+    outputs_[1] = &stem_;
+    outputs_[2] = &leftLeaf_;
+    outputs_[3] = &rightEllipse_;
+    outputs_[4] = &threshOut_;
+    outputs_[5] = &leftEllipse_;
 }
 //------------------------------------------------------------------------------
 bool AnalyzerManager::initialize() {
@@ -285,6 +285,9 @@ void AnalyzerManager::run() {
 
         // Video output
         if (videoOutputFlag_) {
+            //----------
+            cv::putText(threshOut_, std::to_string(pos_), cv::Point(0, 0), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0));
+            //----------
             dumpVideoOutput_();
         }
     }

@@ -27,6 +27,8 @@ private:
     static constexpr int DEFAULT_POT_POSITION { 567 };
     static constexpr int TIMEBAR_HEIGHT { 20 };
 
+    static constexpr int ELEMENT_SIZE { 5 };
+
     inline static const cv::Vec3b RED     {   0,   0, 255 };
     inline static const cv::Vec3b MAGENTA { 255,   0, 255 };
     inline static const cv::Vec3b CYAN    { 255, 255,   0 };
@@ -44,6 +46,8 @@ private:
     void hidePlantPot_(cv::Mat &image);
 
     void colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef);
+
+    void cleanUp_(cv::Mat &image, int size);
 
 private:
     // Config params

@@ -219,9 +219,7 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
         for (int k = 1; (l || r) && k < MAX_WIDTH; k++) {
             if (l) {
                 cv::Vec3b &px = ref.at<cv::Vec3b>(row, col - k);
-                std::cout <<  "******** px(" << row << ", " << col-k << ") = " << px << std::endl;
                 if (isStem(px)) {
-                    std::cout <<  "******** doing stuff -> in" << std::endl;
                     px = RED;
                     // Color over stem px in leaf output
                     lRef.at<uchar>(row, col + k) = BG_COLOR;
@@ -231,9 +229,7 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
             }
             if (r) {
                 cv::Vec3b &px = ref.at<cv::Vec3b>(row, col + k);
-                std::cout <<  "******** px(" << row << ", " << col+k << ") = " << px << std::endl;
                 if (isStem(px)) {
-                    std::cout <<  "******** doing things -> in" << std::endl;
                     px = RED;
                     // Color over stem px in leaf output
                     lRef.at<uchar>(row, col + k) = BG_COLOR;
@@ -243,6 +239,12 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
             }
         }
     }
+}
+//------------------------------------------------------------------------------
+void LeafSegmentation::cleanUp_(cv::Mat &image, int size) {
+    // Morphological operation: close
+    cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(size, size));
+    morphologyEx(image, image, cv::MORPH_CLOSE, element);
 }
 //------------------------------------------------------------------------------
 void LeafSegmentation::initialize() {
@@ -314,6 +316,9 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
             colorFromVector_(ref, lRef, rRef);
         }
     }
+
+    cleanUp_(lRef, ELEMENT_SIZE);
+    cleanUp_(rRef, ELEMENT_SIZE);
 
     TRACE_P(pos_,"< LeafSegmentation::process(%d)", pos_);
     pos_++;
