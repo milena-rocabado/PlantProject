@@ -10,10 +10,10 @@ AnalyzerManager::Subscriber::~Subscriber() {}
 //------------------------------------------------------------------------------
 const std::string AnalyzerManager::WIN_NAMES[] {
     "right_leaf",
-    "stem",
+    "thresholding",
     "left_leaf",
     "right_ellipses",
-    "thresholding"
+    "stem",
     "left_ellipses",
 };
 //------------------------------------------------------------------------------
@@ -27,6 +27,14 @@ AnalyzerManager::AnalyzerManager()
 //------------------------------------------------------------------------------
 void AnalyzerManager::setPotPosition(int pos) {
     leafSegmentation_->setPotPosition(pos);
+}
+//------------------------------------------------------------------------------
+void AnalyzerManager::setInitialPosition(int initPos) {
+    initPos_ = initPos - 1; // we use 0-index
+}
+//------------------------------------------------------------------------------
+void AnalyzerManager::setEndPosition(int endPos) {
+    endPos_ = endPos - 1; // we use 0-index
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
@@ -130,6 +138,8 @@ bool AnalyzerManager::setInputPath(std::string inputPath) {
     // Set default ROI
     resetROI();
 
+    TRACE("* AnalyzerManager::setInputPath: workingDir = \"%s\" output data file = \"%s\"",
+          workingDir_.c_str(), outDataFn_.c_str());
     TRACE("< AnalyzerManager::setInputPath");
     return true;
 }
@@ -150,12 +160,12 @@ void AnalyzerManager::initializeWindows_() {
         }
     }
 
-    outputs_[0] = &rightLeaf_;
-    outputs_[1] = &stem_;
-    outputs_[2] = &leftLeaf_;
-    outputs_[3] = &rightEllipse_;
-    outputs_[4] = &threshOut_;
-    outputs_[5] = &leftEllipse_;
+    outputs_[0] = &leftLeaf_;
+    outputs_[1] = &threshOut_;
+    outputs_[2] = &rightLeaf_;
+    outputs_[3] = &leftEllipse_;
+    outputs_[4] = &stem_;
+    outputs_[5] = &rightEllipse_;
 }
 //------------------------------------------------------------------------------
 bool AnalyzerManager::initialize() {
@@ -222,7 +232,11 @@ void AnalyzerManager::dumpDataToStream_() {
 //------------------------------------------------------------------------------
 void AnalyzerManager::dumpVideoOutput_() {
     for (int i = 0; i < WIN_NUM; i++) {
-         cv::imshow(WIN_NAMES[i], (*outputs_[i])(roi_));
+        // ----
+        cv::putText((*outputs_[i])(roi_), std::to_string(pos_), cv::Point(0, 30),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0));
+        // ----
+        cv::imshow(WIN_NAMES[i], (*outputs_[i])(roi_));
     }
     cv::waitKey(msecs_ - 15);
 }
@@ -237,6 +251,8 @@ void AnalyzerManager::run() {
 
     TRACE("AnalyzerManager::run(): loop begin");
 
+
+    video_.set(cv::CAP_PROP_POS_FRAMES, initPos_);
 
     for (pos_ = initPos_; pos_ <= endPos_; pos_++) {
 
@@ -285,12 +301,21 @@ void AnalyzerManager::run() {
 
         // Video output
         if (videoOutputFlag_) {
-            //----------
-            cv::putText(threshOut_, std::to_string(pos_), cv::Point(0, 0), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0));
-            //----------
             dumpVideoOutput_();
         }
+
+        // DUMPS
+        DUMP_P(pos_, input_, workingDir_, "Ejemplos/input_%d.png", pos_);
+        DUMP_P(pos_, preOut_, workingDir_, "Ejemplos/preproc_%d.png", pos_);
+        DUMP_P(pos_, threshOut_, workingDir_, "Ejemplos/thresh_%d.png", pos_);
+        DUMP_P(pos_, leftLeaf_, workingDir_, "Ejemplos/l_leaf_%d.png", pos_);
+        DUMP_P(pos_, rightLeaf_, workingDir_, "Ejemplos/r_leaf_%d.png", pos_);
+        DUMP_P(pos_, leftEllipse_, workingDir_, "Ejemplos/l_ellipse_%d.png", pos_);
+        DUMP_P(pos_, rightEllipse_, workingDir_, "Ejemplos/r_ellipse_%d.png", pos_);
     }
 
+    if (videoOutputFlag_) {
+        cv::destroyAllWindows();
+    }
     outDataFs_.close();
 }

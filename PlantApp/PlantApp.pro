@@ -26,6 +26,7 @@ CONFIG += c++17
 
 SOURCES += \
     Common/Enums.cpp \
+    Common/Histograms.cpp \
     Common/Utils.cpp \
     Presentation/ConfigDisplayWindow.cpp \
         Processing/AnalyzerManager.cpp \

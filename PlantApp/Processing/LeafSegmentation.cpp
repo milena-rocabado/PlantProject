@@ -251,7 +251,7 @@ void LeafSegmentation::initialize() {
     firstProcessing_ = true;
 }
 //------------------------------------------------------------------------------
-void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &left, cv::Mat &stem) {
+void LeafSegmentation::process(const cv::Mat &input, cv::Mat &left, cv::Mat &right, cv::Mat &stem) {
     assert(!roi_.empty());
 
     TRACE_P(pos_, "> LeafSegmentation::process(%d)", pos_);
@@ -290,7 +290,7 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
         stemPosition_ = stem_.back();
         firstProcessing_ = false;
         lastStem_ = stem_;
-        TRACE("* LeafSegmentation::process(%d): stemPosition = %d", stemPosition_);
+        TRACE("* LeafSegmentation::process(%d): stemPosition = %d", pos_, stemPosition_);
     } else {
         if (stemPosition_ - MAX_WIDTH <= stem_.back()
                 && stem_.back() <= stemPosition_ + MAX_WIDTH) {
@@ -320,7 +320,7 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &right, cv::Mat &le
     cleanUp_(lRef, ELEMENT_SIZE);
     cleanUp_(rRef, ELEMENT_SIZE);
 
-    TRACE_P(pos_,"< LeafSegmentation::process(%d)", pos_);
+    TRACE_P(pos_, "< LeafSegmentation::process(%d)", pos_);
     pos_++;
 }
 //------------------------------------------------------------------------------

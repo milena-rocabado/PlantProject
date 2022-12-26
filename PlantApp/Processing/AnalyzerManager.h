@@ -33,9 +33,9 @@ public:
 
     void setPotPosition(int pos);
 
-    void setInitialPosition(int initPos) { initPos_ = initPos; }
+    void setInitialPosition(int initPos);
 
-    void setEndPosition(int endPos) { endPos_ = endPos; }
+    void setEndPosition(int endPos);
 
     void setStartInterval(common::Interval interval) { interval_ = interval; }
 

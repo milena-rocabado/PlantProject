@@ -48,10 +48,10 @@ void MainWindow::disableElements_() {
 //------------------------------------------------------------------------------
 void MainWindow::resetSpnValues_() {
     int max = manager_->getMaxFrames();
-    ui->spnInitPos->setRange(0, max);
-    ui->spnEndPos->setRange(0, max);
+    ui->spnInitPos->setRange(1, max);
+    ui->spnEndPos->setRange(1, max);
 
-    ui->spnInitPos->setValue(0);
+    ui->spnInitPos->setValue(1);
     ui->spnEndPos->setValue(max);
 }
 //------------------------------------------------------------------------------
@@ -179,7 +179,9 @@ void MainWindow::on_pbProcess_clicked() {
 //    }
 
     if (manager_->initialize()) {
+        ui->pbProcess->setEnabled(false);
         manager_->run();
+        ui->pbProcess->setEnabled(true);
     } else {
         setErrorState(QString::fromStdString("Could not open output file " +
                       manager_->getOutputFilename()));

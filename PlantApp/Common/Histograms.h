@@ -19,7 +19,7 @@ typedef struct {
     }
 } Histogram_t;
 
-// TODO plot hist function
+void plotHist(const cv::Mat &hist, cv::Mat &output, int n = -1);
 
 }
 

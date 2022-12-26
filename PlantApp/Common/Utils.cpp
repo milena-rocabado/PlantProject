@@ -23,7 +23,8 @@ bool parseFilePath(const std::string &path, std::string &dir, std::string &file)
 
     size_t lastDot = path.find_last_of('.');
     if (lastDot != std::string::npos) {
-        file.assign(path.substr(lastSlash + 1, lastDot));
+        int len = lastDot - lastSlash - 1;
+        file.assign(path.substr(lastSlash + 1, len));
     } else  {
         dir.clear();
         file.clear();

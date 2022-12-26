@@ -7,6 +7,20 @@ void EllipseFitting::close_(int size, cv::Mat &image) {
     morphologyEx(image, image, cv::MORPH_CLOSE, element);
 }
 //------------------------------------------------------------------------------
+void EllipseFitting::drawEllipse_(cv::Mat &canvas, const cv::RotatedRect &ellipse) {
+    cv::Point2f points[4];
+    ellipse.points(points);
+
+    auto middle = [] (cv::Point a, cv::Point b) -> cv::Point {
+        return cv::Point((a.x + b.x)/2, (a.y + b.y)/2);
+    };
+
+//    cv::line(canvas, middle(points[0], points[1]), middle(points[2], points[3]), GREEN);
+    cv::line(canvas, middle(points[1], points[2]), middle(points[3], points[0]), GREEN, 2);
+
+//    cv::ellipse(canvas, ellipse, RED);
+}
+//------------------------------------------------------------------------------
 void EllipseFitting::fitEllipse_(const cv::Mat &input, cv::Mat &output,
                                  float &angle) {
     assert(!roi_.empty());
@@ -32,10 +46,10 @@ void EllipseFitting::fitEllipse_(const cv::Mat &input, cv::Mat &output,
         }
     }
     cv::RotatedRect ellipseRect = cv::fitEllipse(contours[index]);
-    cv::ellipse(outputRef, ellipseRect, RED);
+    drawEllipse_(outputRef, ellipseRect);
 
     // Data output
-    angle = ellipseRect.angle;
+    angle = ellipseRect.angle; // eje horizontal, aumenta en sentido horario
 }
 //------------------------------------------------------------------------------
 void EllipseFitting::process(const cv::Mat &leaf, const cv::Mat &canvas,
@@ -54,7 +68,12 @@ void EllipseFitting::process(const cv::Mat &leaf, const cv::Mat &canvas,
 
     fitEllipse_(leafInput, ellipseDrawing, angle);
 
+
     TRACE_P(pos_, "< EllipseFitting::process(%d, %s)\n", pos_,
             side == common::LEFT ? "left" : "right");
-    pos_++;
+
+    if (side == common::RIGHT) {
+        angle = 180 - angle; // cambio de eje
+        pos_++;
+    }
 }

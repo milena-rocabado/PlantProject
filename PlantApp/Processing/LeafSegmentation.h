@@ -10,7 +10,7 @@ public:
 
     void initialize();
 
-    void process(const cv::Mat &input, cv::Mat &r_output, cv::Mat &l_output, cv::Mat &stem);
+    void process(const cv::Mat &input,cv::Mat &l_output,  cv::Mat &r_output, cv::Mat &stem);
 
     void setInitialPosition(int pos) { pos_ = pos; }
 
@@ -27,7 +27,7 @@ private:
     static constexpr int DEFAULT_POT_POSITION { 567 };
     static constexpr int TIMEBAR_HEIGHT { 20 };
 
-    static constexpr int ELEMENT_SIZE { 5 };
+    static constexpr int ELEMENT_SIZE { 3 };
 
     inline static const cv::Vec3b RED     {   0,   0, 255 };
     inline static const cv::Vec3b MAGENTA { 255,   0, 255 };
