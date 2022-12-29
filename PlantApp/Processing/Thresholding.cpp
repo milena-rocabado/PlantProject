@@ -1,58 +1,84 @@
 #include "Thresholding.h"
-#include "Traces.h"
 
-#include "Utils.h"
+#include "Traces.h"
 #include "Histograms.h"
 
+#include <cmath>
+
 //------------------------------------------------------------------------------
-void Thresholding::initialize(const cv::Mat &frame) {
-    assert(!roi_.empty());
-    assert(!inputSize_.empty());
+void Thresholding::searchHistogram_(const cv::Mat &hist, common::Interval interval) {
 
-    hist::Histogram_t calculateHist;
-    cv::Mat mask = cv::Mat::zeros(inputSize_, CV_8UC1);
-    cv::rectangle(mask, roi_, cv::Scalar(255, 255, 255), cv::FILLED);
-    calculateHist.histMask = mask;
+    int streak { 0 }, initBin { -1 }, endBin { -1 };
+    bool valleyFound { false };
 
-    cv::Mat hist;
-    cv::cvtColor(frame, frame, cv::COLOR_BGR2GRAY);
-    calculateHist(frame, hist);
-    optimalThreshold_ = findThreshold_(hist);
-}
-//------------------------------------------------------------------------------
-double Thresholding::findThreshold_(const cv::Mat &hist) {
-    TRACE("> Thresholding::findThreshold_(VALLEY_THRESHOLD = %d, STREAK = %d)\n",
-          VALLEY_THRESHOLD, VALLEY_MIN_LENGTH);
-
-    int streak { 0 }, initial_bin { -1 };
-    float val;
-
-    for (int i = 0; i < hist.size[0]; i++) {
-        val = hist.at<float>(i);
+    for (int i = 0; i < MAX_SEARCH_POS; i++) {
+        float val = hist.at<float>(i);
 
         if (val < VALLEY_THRESHOLD) {
-            if (0 == streak++) {
-                initial_bin = i;
-                TRACE("* Thresholding::findThreshold_(): start streak at %d\n", i);
+            // If start of streak, store initial bin
+            if (streak == 0)
+                initBin = i;
+
+            // Update streak
+            streak++;
+
+            // If minimum length surpassed, store/update end bin
+            if (streak > VALLEY_MIN_LENGTH) {
+                endBin = i;
+                valleyFound = true;
             }
-            TRACE("* Thresholding::findThreshold_(): streak = %d\n", streak);
-            if (streak == VALLEY_MIN_LENGTH) break;
         } else {
-            TRACE("* Thresholding::findThreshold_(): restart streak at %d\n", i);
+            if (valleyFound) // If found, end loop
+                break;
             streak = 0;
         }
     }
 
-    double threshold { -1.0 };
-    if (streak == VALLEY_MIN_LENGTH) {
-        threshold = initial_bin + VALLEY_MIN_LENGTH/2;
-        TRACE("* Thresholding::findThreshold_(): threshold found = %.2f\n", threshold);
-    } else {
-        TRACE("* Thresholding::findThreshold_(): threshold not found\n");
+    if (valleyFound) {
+        bgThresh_ = endBin - (interval == common::NIGHT ? 0 : VALLEY_MIN_LENGTH / 2);
+    }
+}
+//------------------------------------------------------------------------------
+void Thresholding::searchHistogram2_(const cv::Mat &hist) {
+    auto equals = [] (float a, float b) -> bool {
+        return abs(a-b) < 0.001f;
+    };
+
+    float lastVal = 256.f;
+    int times = 0;
+    int minimum = 0;
+    bool found = false;
+    for (int i = 0; i < hist.size[0]; i++) {
+        float val = hist.at<float>(i);
+
+        if (equals(val, 0.f)) continue;
+
+        if (val < lastVal)
+            times++;
+        else if (found)
+            break;
+        else
+            times = 0;
+
+        lastVal = val;
+
+        if (times >= 5) {
+            found = true;
+            minimum = i;
+        }
     }
 
-    TRACE("< Thresholding::findThreshold_()\n");
-    return threshold;
+    floorThresh_ = minimum;
+}
+//------------------------------------------------------------------------------
+void Thresholding::findThreshold_(const cv::Mat &frame, common::Interval interval) {
+
+    // Calculate histogram
+    hist::Histogram_t calculateHist;
+    cv::Mat hist;
+    calculateHist(frame(roi_), hist);
+
+    searchHistogram_(hist, interval);
 }
 //------------------------------------------------------------------------------
 double Thresholding::otsuThreshold_(const cv::Mat &input, cv::Mat &output) {
@@ -68,15 +94,20 @@ double Thresholding::otsuThreshold_(const cv::Mat &input, cv::Mat &output) {
     return thresh;
 }
 //------------------------------------------------------------------------------
-void Thresholding::process(const cv::Mat &input, cv::Mat &output) {
+void Thresholding::process(const cv::Mat &input, common::Interval interval,
+                           cv::Mat &output) {
     TRACE_P(pos_, "> Thresholding::process(%d)", pos_);
 
 #ifdef OTSU
     double threshold = otsuThreshold_(input, output);
     TRACE_P(pos_, "* Thresholding::process: threshold = %.0f", threshold);
 #else
-    cv::threshold(input, output, optimalThreshold_, 255.0, cv::THRESH_BINARY);
+    findThreshold_(input, interval);
+
+    cv::threshold(input, output, bgThresh_, 255.0, cv::THRESH_BINARY);
 #endif
+
+    output = 255 - output;
 
     TRACE_P(pos_, "< Thresholding::process(%d)", pos_);
     pos_++;

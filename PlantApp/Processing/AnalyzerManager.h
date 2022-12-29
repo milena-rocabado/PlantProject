@@ -19,6 +19,8 @@ class AnalyzerManager
 public:
     AnalyzerManager();
 
+    ~AnalyzerManager();
+
     bool setInputPath(std::string inputPath);
 
     bool setOutputDirectory(std::string path);

@@ -23,7 +23,9 @@ public:
     void setDumpDirectory(std::string dir) { wd_ = dir; }
 
 private:
-    static constexpr int MAX_WIDTH { 6 };
+    static constexpr int MAX_WIDTH { 10 };
+    static constexpr int MAX_DIFF { 6 };
+
     static constexpr int DEFAULT_POT_POSITION { 567 };
     static constexpr int TIMEBAR_HEIGHT { 20 };
 
@@ -34,10 +36,10 @@ private:
     inline static const cv::Vec3b CYAN    { 255, 255,   0 };
     inline static const cv::Vec3b GREEN   {   0, 255,   0 };
 
-    inline static const uchar BG_COLOR { 255 };
+    inline static const uchar BG_COLOR { 0 };
 
 private:
-    bool isStem(const cv::Vec3b &px);
+    bool isStem3C(const cv::Vec3b &px);
 
     void search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef);
 

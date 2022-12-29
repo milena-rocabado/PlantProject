@@ -73,4 +73,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 DEFINES += TRACE_ON \
-           OTSU
+           DUMP_ON \
+#           OTSU

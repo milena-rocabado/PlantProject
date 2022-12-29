@@ -56,7 +56,7 @@ void MainWindow::resetSpnValues_() {
 }
 //------------------------------------------------------------------------------
 void MainWindow::setCbxValues_() {
-    for (int i = 0; i <= common::NIGHT; i++) {
+    for (int i = 0; i < common::INTERVAL_NUM; i++) {
         std::stringstream ss;
         ss << static_cast<common::Interval>(i);
         ui->cbxDayNight->addItem(QString::fromStdString(ss.str()), i);

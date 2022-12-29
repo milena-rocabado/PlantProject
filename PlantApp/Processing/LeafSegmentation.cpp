@@ -6,8 +6,8 @@ LeafSegmentation::LeafSegmentation() :
     potPosition_(DEFAULT_POT_POSITION)
 {}
 //------------------------------------------------------------------------------
-bool LeafSegmentation::isStem(const cv::Vec3b &px) {
-    return px[0] == 0 && px[1] == 0 && px[2] == 0;
+bool LeafSegmentation::isStem3C(const cv::Vec3b &px) {
+    return px[0] == 255 && px[1] == 255 && px[2] == 255;
 }
 //------------------------------------------------------------------------------
 void LeafSegmentation::colorOverLeaves_(const cv::Point &point, cv::Mat &left, cv::Mat &right) {
@@ -50,7 +50,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
     for (row = 0; !found && first && row < maxRow; row++) {
         for (int col = 0; col < ref.cols; col++) {
             cv::Vec3b &pixel = ref.at<cv::Vec3b>(row, col);
-            if ((found = isStem(pixel))) {
+            if ((found = isStem3C(pixel))) {
                 // Color stem red
                 pixel = RED;
                 TRACE_P(pos_,"* LeafSegmentation::search_(%d): pixel found: (%d, %d)", pos_, row, col);
@@ -92,7 +92,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
 
         // Search directly under last pos
         cv::Vec3b &pixel = ref.at<cv::Vec3b>(row, last);
-        if ((found = isStem(pixel))) {
+        if ((found = isStem3C(pixel))) {
             // Stem color red
             pixel = RED;
             // Store position
@@ -107,7 +107,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
             for (int k = 1; (l || r) && k < MAX_WIDTH; k++) {
                 if (l) {
                     cv::Vec3b &px_l = ref.at<cv::Vec3b>(row, last - k);
-                    if (isStem(px_l)) {
+                    if (isStem3C(px_l)) {
                         // Color stem red
                         px_l = RED;
                         // Color over stem px in leaf output
@@ -118,7 +118,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
                 }
                 if (r) {
                     cv::Vec3b &px_r = ref.at<cv::Vec3b>(row, last + k);
-                    if (isStem(px_r)) {
+                    if (isStem3C(px_r)) {
                         // Color stem red
                         px_r = RED;
                         // Color over stem px in leaf output
@@ -139,7 +139,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
 
             // To the left
             cv::Vec3b &px_l = ref.at<cv::Vec3b>(row, last - j);
-            if ((found = isStem(px_l))) {
+            if ((found = isStem3C(px_l))) {
                 last = last - j;
                 // Stem color red
                 px_l = RED;
@@ -150,7 +150,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
                 // Found, but keep searching left
                 for (int k = 1; k < MAX_WIDTH; k++) {
                     cv::Vec3b &px = ref.at<cv::Vec3b>(row, last - k);
-                    if (isStem(px)){
+                    if (isStem3C(px)){
                         // Color stem red
                         px = RED;
                         // Color over stem px in left leaf output
@@ -163,7 +163,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
 
             // To the right
             cv::Vec3b &px_r = ref.at<cv::Vec3b>(row, last + j);
-            if ((found = isStem(px_r))) {
+            if ((found = isStem3C(px_r))) {
                 last = last + j;
                 // Stem color red
                 px_r = RED;
@@ -174,7 +174,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
                 // Keep searching right
                 for (int k = 1; k < MAX_WIDTH; k++) {
                     cv::Vec3b &px = ref.at<cv::Vec3b>(row, last + k);
-                    if (isStem(px)){
+                    if (isStem3C(px)){
                         // Color stem red
                         px = RED;
                         // Color over stem px in right leaf output
@@ -219,7 +219,7 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
         for (int k = 1; (l || r) && k < MAX_WIDTH; k++) {
             if (l) {
                 cv::Vec3b &px = ref.at<cv::Vec3b>(row, col - k);
-                if (isStem(px)) {
+                if (isStem3C(px)) {
                     px = RED;
                     // Color over stem px in leaf output
                     lRef.at<uchar>(row, col + k) = BG_COLOR;
@@ -229,7 +229,7 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
             }
             if (r) {
                 cv::Vec3b &px = ref.at<cv::Vec3b>(row, col + k);
-                if (isStem(px)) {
+                if (isStem3C(px)) {
                     px = RED;
                     // Color over stem px in leaf output
                     lRef.at<uchar>(row, col + k) = BG_COLOR;
@@ -242,9 +242,9 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
 }
 //------------------------------------------------------------------------------
 void LeafSegmentation::cleanUp_(cv::Mat &image, int size) {
-    // Morphological operation: close
+    // Morphological operation: open
     cv::Mat element = getStructuringElement(cv::MORPH_RECT, cv::Size(size, size));
-    morphologyEx(image, image, cv::MORPH_CLOSE, element);
+    morphologyEx(image, image, cv::MORPH_OPEN, element);
 }
 //------------------------------------------------------------------------------
 void LeafSegmentation::initialize() {
@@ -292,8 +292,8 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &left, cv::Mat &rig
         lastStem_ = stem_;
         TRACE("* LeafSegmentation::process(%d): stemPosition = %d", pos_, stemPosition_);
     } else {
-        if (stemPosition_ - MAX_WIDTH <= stem_.back()
-                && stem_.back() <= stemPosition_ + MAX_WIDTH) {
+        if (stemPosition_ - MAX_DIFF <= stem_.back()
+                && stem_.back() <= stemPosition_ + MAX_DIFF) {
             TRACE_P(pos_,"* LeafSegmentation::process(%d): stem found is correct", pos_);
             lastStem_ = stem_;
         } else {

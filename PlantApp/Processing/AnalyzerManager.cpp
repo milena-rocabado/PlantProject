@@ -25,6 +25,11 @@ AnalyzerManager::AnalyzerManager()
     , ellipseFitting_(std::make_unique<EllipseFitting>())
 { }
 //------------------------------------------------------------------------------
+AnalyzerManager::~AnalyzerManager() {
+    if (video_.isOpened())
+        video_.release();
+}
+//------------------------------------------------------------------------------
 void AnalyzerManager::setPotPosition(int pos) {
     leafSegmentation_->setPotPosition(pos);
 }
@@ -178,18 +183,14 @@ bool AnalyzerManager::initialize() {
     preProcessing_->setInitialPosition(initPos_);
     preProcessing_->setInputSize(inputSize);
     preProcessing_->setROI(roi_);
+    preProcessing_->setDumpDirectory(workingDir_ + "Ejemplos/");
     preProcessing_->initialize();
 
     dayOrNight_->setInitialPosition(initPos_);
 
     thresholding_->setInitialPosition(initPos_);
     thresholding_->setROI(roi_);
-#ifndef OTSU
     thresholding_->setInputSize(inputSize);
-    video_ >> input_;
-    thresholding_->initialize(input_);
-    video.set(CAP_PROP_POS_FRAMES, 0);
-#endif
 
     leafSegmentation_->setInitialPosition(initPos_);
     leafSegmentation_->setROI(roi_);
@@ -233,11 +234,16 @@ void AnalyzerManager::dumpDataToStream_() {
 void AnalyzerManager::dumpVideoOutput_() {
     for (int i = 0; i < WIN_NUM; i++) {
         // ----
-        cv::putText((*outputs_[i])(roi_), std::to_string(pos_), cv::Point(0, 30),
+        cv::putText((*outputs_[i])(roi_), std::to_string(pos_), cv::Point(0, 25),
                     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0));
         // ----
         cv::imshow(WIN_NAMES[i], (*outputs_[i])(roi_));
     }
+    //_________
+    cv::imshow("left-contours", ellipseFitting_->getContoursLOut());
+    cv::imshow("right-contours", ellipseFitting_->getContoursROut());
+    //_________
+
     cv::waitKey(msecs_ - 15);
 }
 //------------------------------------------------------------------------------
@@ -249,8 +255,7 @@ void AnalyzerManager::updateSubscriber_(int pos) {
 void AnalyzerManager::run() {
     assert(video_.isOpened());
 
-    TRACE("AnalyzerManager::run(): loop begin");
-
+    TRACE("* AnalyzerManager::run(): loop begin");
 
     video_.set(cv::CAP_PROP_POS_FRAMES, initPos_);
 
@@ -275,7 +280,7 @@ void AnalyzerManager::run() {
         preProcessing_->process(input_, preOut_);
 
         // Thresholding
-        thresholding_->process(preOut_, threshOut_);
+        thresholding_->process(preOut_, interval_, threshOut_);
 
         // Segmentation
         leafSegmentation_->process(threshOut_, leftLeaf_, rightLeaf_, stem_);
@@ -305,13 +310,13 @@ void AnalyzerManager::run() {
         }
 
         // DUMPS
-        DUMP_P(pos_, input_, workingDir_, "Ejemplos/input_%d.png", pos_);
-        DUMP_P(pos_, preOut_, workingDir_, "Ejemplos/preproc_%d.png", pos_);
-        DUMP_P(pos_, threshOut_, workingDir_, "Ejemplos/thresh_%d.png", pos_);
-        DUMP_P(pos_, leftLeaf_, workingDir_, "Ejemplos/l_leaf_%d.png", pos_);
-        DUMP_P(pos_, rightLeaf_, workingDir_, "Ejemplos/r_leaf_%d.png", pos_);
-        DUMP_P(pos_, leftEllipse_, workingDir_, "Ejemplos/l_ellipse_%d.png", pos_);
-        DUMP_P(pos_, rightEllipse_, workingDir_, "Ejemplos/r_ellipse_%d.png", pos_);
+//        DUMP_P(pos_, input_, workingDir_, "Ejemplos/input_%d.png", pos_);
+//        DUMP_P(pos_, preOut_, workingDir_, "Ejemplos/preproc_%d.png", pos_);
+//        DUMP_P(pos_, threshOut_, workingDir_, "Ejemplos/thresh_%d.png", pos_);
+        DUMP_P(pos_, leftLeaf_, workingDir_, "Ejemplos/leaf_l_%d.png", pos_);
+        DUMP_P(pos_, rightLeaf_, workingDir_, "Ejemplos/leaf_r_%d.png", pos_);
+        DUMP_P(pos_, leftEllipse_, workingDir_, "Ejemplos/ellipse_l_%d.png", pos_);
+        DUMP_P(pos_, rightEllipse_, workingDir_, "Ejemplos/ellipse_r_%d.png", pos_);
     }
 
     if (videoOutputFlag_) {

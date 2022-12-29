@@ -1,4 +1,5 @@
 #include "Histograms.h"
+#include "Traces.h"
 
 namespace hist {
 
@@ -26,9 +27,10 @@ void plotHist(const cv::Mat &hist, cv::Mat &output, int n) {
     cv::rectangle(plot, area_rect, PLOT_AXIS_COLOR);
 
     double factor { 0.038616 };
+    // { 0.010284 }; //{ 0.011717 };
 //    minMaxLoc(hist, nullptr, &factor);
 //    factor = area_size.height / factor;
-//    TRACE(true, "plot_hist(): factor = %f\n", factor);
+//    TRACE("plotHist(): ********** factor = %f\n", factor);
 
     for (int i = 0; i < area_size.width; i++) {
         // X axis labels

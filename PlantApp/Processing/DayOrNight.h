@@ -8,6 +8,9 @@
 class DayOrNight
 {
 public:
+    static constexpr int INTERVAL_MIN_LENGTH { 100 };
+
+public:
     DayOrNight();
 
     void process(const cv::Mat &input, common::Interval &interval,
@@ -18,7 +21,6 @@ public:
 private:
     static constexpr double TOLERANCE { 7. };
     static constexpr int MIN_TIMES_SURPASSED { 5 };
-    static constexpr int INTERVAL_MIN_LENGTH { 100 };
 
 private:
     void dayOrNight_(const cv::Mat &input);

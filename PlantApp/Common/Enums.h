@@ -9,7 +9,8 @@ namespace common {
 
 enum Interval {
     NIGHT,
-    DAY
+    DAY,
+    INTERVAL_NUM
 };
 
 Interval operator!(Interval interval);

@@ -17,6 +17,10 @@ public:
 
     void setROI(const cv::Rect &roi) { roi_ = roi; }
 
+    cv::Mat getContoursLOut() { return contoursLOut_; }
+
+    cv::Mat getContoursROut() { return contoursROut_; }
+
 private:
     inline static const cv::Vec3b RED { 0, 0, 255 };
     inline static const cv::Vec3b GREEN { 0, 255, 0 };
@@ -24,7 +28,7 @@ private:
 private:
     void close_(int size, cv::Mat &image);
     void fitEllipse_(const cv::Mat &input, cv::Mat &output,
-                     float &angle);
+                     cv::Mat &contoursOut, float &angle);
     void drawEllipse_(cv::Mat &canvas, const cv::RotatedRect &ellipse);
 
 private:
@@ -35,7 +39,8 @@ private:
     int pos_;
 
     // Contour drawing
-    cv::Mat contoursOut_;
+    cv::Mat contoursLOut_;
+    cv::Mat contoursROut_;
 };
 
 #endif

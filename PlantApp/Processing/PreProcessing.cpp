@@ -14,20 +14,22 @@ void PreProcessing::initialize() {
 }
 //------------------------------------------------------------------------------
 void PreProcessing::process(const cv::Mat &input, cv::Mat &output) {
-    TRACE_P(pos_, "> PreProcessing::process(%d)\n", pos_);
+    TRACE_P(pos_, "> PreProcessing::process(%d)", pos_);
 
     // to grayscale
     toGrayscale_(input, grayscaleOut_);
-    TRACE_P(pos_, "* PreProcessing::process(%d): to grayscale\n", pos_);
+    TRACE_P(pos_, "* PreProcessing::process(%d): to grayscale", pos_);
+    DUMP_HIST_P(pos_, grayscaleOut_(roi_), wd_, "input_hist_%d.png", pos_);
 
     // stretch hist
     stretchHistogram_(grayscaleOut_, stretchOut_);
-    TRACE_P(pos_, "* PreProcessing::process(%d): histogram stretched\n", pos_);
+    TRACE_P(pos_, "* PreProcessing::process(%d): histogram stretched", pos_);
+    DUMP_HIST_P(pos_, stretchOut_(roi_), wd_, "stretched_hist_%d.png", pos_);
 
     output = stretchOut_;
 
+    TRACE_P(pos_, "< PreProcessing::process(%d)", pos_);
     pos_++;
-    TRACE_P(pos_, "< PreProcessing::process(%d)\n", pos_);
 }
 //------------------------------------------------------------------------------
 void PreProcessing::toGrayscale_(const cv::Mat &input, cv::Mat &output) {
@@ -58,7 +60,7 @@ void PreProcessing::stretchHistogram_(const cv::Mat &input, cv::Mat &output) {
     }
     min = static_cast<double>(index);
 
-    TRACE_P(pos_, "* PreProcessing::stretchHistogram_(%d):  (in) min = %d max = %d\n",
+    TRACE_P(pos_, "* PreProcessing::stretchHistogram_(%d):  (in) min = %d max = %d",
             pos_, static_cast<int>(min), static_cast<int>(max));
 
     // Stretch operation
@@ -67,6 +69,5 @@ void PreProcessing::stretchHistogram_(const cv::Mat &input, cv::Mat &output) {
     output *= (255.0 / (max - min));
 
     output.convertTo(output, CV_8UC1);
-    calcHist_(output, outHist_);
 }
 //------------------------------------------------------------------------------

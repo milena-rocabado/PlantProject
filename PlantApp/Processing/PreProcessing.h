@@ -19,6 +19,8 @@ public:
 
     void setROI(const cv::Rect &roi){ roi_ = roi; }
 
+    void setDumpDirectory(std::string dir) { wd_ = dir; }
+
 private:
     static constexpr float PERCENTILE = 0.015f;
 
@@ -44,8 +46,9 @@ private:
     cv::Mat grayscaleOut_;
     // Output container for stretchHistogram_ operation
     cv::Mat stretchOut_;
-    // Output histogram
-    cv::Mat outHist_;
+
+    // Output dump directory
+    std::string wd_;
 };
 
 #endif
