@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "Enums.h"
+#include "Common.h"
 
 class DayOrNight
 {

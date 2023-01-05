@@ -26,7 +26,11 @@ void plotHist(const cv::Mat &hist, cv::Mat &output, int n) {
 
     cv::rectangle(plot, area_rect, PLOT_AXIS_COLOR);
 
-    double factor { 0.038616 };
+    double factor;
+    if (hist.size[0] < HIST_SIZE)
+        factor = 0.005586;
+    else
+        factor = 0.038616;
     // { 0.010284 }; //{ 0.011717 };
 //    minMaxLoc(hist, nullptr, &factor);
 //    factor = area_size.height / factor;

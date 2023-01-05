@@ -22,7 +22,10 @@ public:
     void setDumpDirectory(std::string dir) { wd_ = dir; }
 
 private:
+    // For histogram stretching
     static constexpr float PERCENTILE = 0.015f;
+    // Gaussian blur kernel size
+    static constexpr int K_SIZE = 7;
 
 private:
     void toGrayscale_(const cv::Mat &input, cv::Mat &output);
@@ -42,10 +45,6 @@ private:
 
     // Find min and max values in histogram
     float numPx_;
-    // Output container for toGrayscale_ operation
-    cv::Mat grayscaleOut_;
-    // Output container for stretchHistogram_ operation
-    cv::Mat stretchOut_;
 
     // Output dump directory
     std::string wd_;

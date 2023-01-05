@@ -16,17 +16,20 @@ void PreProcessing::initialize() {
 void PreProcessing::process(const cv::Mat &input, cv::Mat &output) {
     TRACE_P(pos_, "> PreProcessing::process(%d)", pos_);
 
+//    // Gaussian blur
+//    cv::GaussianBlur(input, output, cv::Size(K_SIZE, K_SIZE), 0);
+//    TRACE_P(pos_, "* PreProcessing::process(%d): blurred", pos_);
+
+    output = input;
     // to grayscale
-    toGrayscale_(input, grayscaleOut_);
+    toGrayscale_(output, output);
     TRACE_P(pos_, "* PreProcessing::process(%d): to grayscale", pos_);
-    DUMP_HIST_P(pos_, grayscaleOut_(roi_), wd_, "input_hist_%d.png", pos_);
+    DUMP_HIST_P(pos_, output(roi_), wd_, "input_hist_%d.png", pos_);
 
     // stretch hist
-    stretchHistogram_(grayscaleOut_, stretchOut_);
+    stretchHistogram_(output, output);
     TRACE_P(pos_, "* PreProcessing::process(%d): histogram stretched", pos_);
-    DUMP_HIST_P(pos_, stretchOut_(roi_), wd_, "stretched_hist_%d.png", pos_);
-
-    output = stretchOut_;
+    DUMP_HIST_P(pos_, output(roi_), wd_, "stretched_hist_%d.png", pos_);
 
     TRACE_P(pos_, "< PreProcessing::process(%d)", pos_);
     pos_++;

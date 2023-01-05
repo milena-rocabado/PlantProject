@@ -5,7 +5,7 @@
 
 namespace hist {
 
-static constexpr int HIST_SIZE { 255 };
+static constexpr int HIST_SIZE { 256 };
 
 typedef struct {
     const int histChannels[1] { 0 };

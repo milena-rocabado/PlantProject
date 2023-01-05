@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <fstream>
-#include "Enums.h"
+#include "Common.h"
 
 #include "PreProcessing.h"
 #include "DayOrNight.h"
@@ -26,6 +26,8 @@ public:
     bool setOutputDirectory(std::string path);
 
     bool initialize();
+
+    void launchProcessing();
 
     void run();
 

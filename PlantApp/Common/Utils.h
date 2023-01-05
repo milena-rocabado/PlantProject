@@ -2,7 +2,6 @@
 #define COMMON_H
 
 #include <string>
-#include <opencv2/opencv.hpp>
 
 namespace utils {
 

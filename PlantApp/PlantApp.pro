@@ -25,7 +25,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++17
 
 SOURCES += \
-    Common/Enums.cpp \
+    Common/Common.cpp \
     Common/Histograms.cpp \
     Common/Utils.cpp \
     Presentation/ConfigDisplayWindow.cpp \
@@ -40,7 +40,8 @@ SOURCES += \
         main.cpp \
 
 HEADERS += \
-        Common/Enums.h \
+        Common/Colors.h \
+        Common/Common.h \
         Common/Histograms.h \
         Common/Traces.h \
         Common/Utils.h \

@@ -8,7 +8,7 @@
 #include <string>
 
 #include "AnalyzerManager.h"
-#include "Enums.h"
+#include "Common.h"
 
 #include "ROIWindow.h"
 #include "ConfigDisplayWindow.h"
@@ -24,6 +24,10 @@ MainWindow::MainWindow(QWidget *parent) :
     configDisplayWin_ = std::make_unique<ConfigDisplayWindow>();
 
     ui->setupUi(this);
+
+    ui->progressBar->setRange(0, 100);
+    ui->progressBar->setValue(0);
+
     disableElements_();
     setCbxValues_();
 }
@@ -91,7 +95,7 @@ void MainWindow::setErrorState(QString errorMsg) {
 }
 //------------------------------------------------------------------------------
 void MainWindow::updateProgress(double progress) {
-    // nada por ahora
+    ui->progressBar->setValue(static_cast<int>(progress*100.));
 }
 //------------------------------------------------------------------------------
 // SLOTS -----------------------------------------------------------------------
@@ -114,8 +118,14 @@ void MainWindow::on_lneInputPath_textChanged(const QString &text) {
 void MainWindow::on_pbExaminarInput_clicked() {
     TRACE("> MainWindow::on_pbExaminarInput_clicked()");
 
+    QString prevFp = ui->lneInputPath->text();
     QString fp = QFileDialog::getOpenFileName(this, "Select input video");
-    ui->lneInputPath->setText(fp);
+
+    if (fp.compare(prevFp) == 0) {
+        on_lneInputPath_textChanged(fp);
+    } else {
+        ui->lneInputPath->setText(fp);
+    }
 
     TRACE("< MainWindow::on_pbExaminarInput_clicked()");
 }
@@ -174,13 +184,11 @@ void MainWindow::on_chkOutput_stateChanged(int state) {
 void MainWindow::on_pbProcess_clicked() {
     TRACE("> MainWindow::on_pbProcess_clicked()");
 
-//    if (ui->chkOutput->checkState() == Qt::Checked) {
-//        manager_->setSubscriber(this);
-//    }
+    manager_->setSubscriber(this);
 
     if (manager_->initialize()) {
         ui->pbProcess->setEnabled(false);
-        manager_->run();
+        manager_->launchProcessing();
         ui->pbProcess->setEnabled(true);
     } else {
         setErrorState(QString::fromStdString("Could not open output file " +

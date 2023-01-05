@@ -3,7 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "Enums.h"
+#include "Common.h"
 
 class EllipseFitting
 {
@@ -17,16 +17,16 @@ public:
 
     void setROI(const cv::Rect &roi) { roi_ = roi; }
 
+    void setDumpDirectory(std::string dir) { wd_ = dir; }
+
     cv::Mat getContoursLOut() { return contoursLOut_; }
 
     cv::Mat getContoursROut() { return contoursROut_; }
 
 private:
-    inline static const cv::Vec3b RED { 0, 0, 255 };
-    inline static const cv::Vec3b GREEN { 0, 255, 0 };
-
-private:
-    void close_(int size, cv::Mat &image);
+    void findLeafContour_(const std::vector<std::vector<cv::Point>> &contours,
+                          std::vector<cv::Point> &leafContour,
+                          cv::Mat &contoursOut);
     void fitEllipse_(const cv::Mat &input, cv::Mat &output,
                      cv::Mat &contoursOut, float &angle);
     void drawEllipse_(cv::Mat &canvas, const cv::RotatedRect &ellipse);
@@ -37,10 +37,15 @@ private:
 
     // Current position
     int pos_;
+    // Current side
+    common::Side side_;
 
     // Contour drawing
     cv::Mat contoursLOut_;
     cv::Mat contoursROut_;
+
+    // Output directory
+    std::string wd_;
 };
 
 #endif
