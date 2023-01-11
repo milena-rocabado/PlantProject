@@ -26,9 +26,10 @@ CONFIG += c++17
 
 SOURCES += \
     Common/Common.cpp \
-    Common/Histograms.cpp \
+    Common/Plots.cpp \
     Common/Utils.cpp \
     Presentation/ConfigDisplayWindow.cpp \
+    Presentation/PotPositionWindow.cpp \
         Processing/AnalyzerManager.cpp \
         Processing/PreProcessing.cpp \
         Processing/DayOrNight.cpp \
@@ -43,9 +44,11 @@ HEADERS += \
         Common/Colors.h \
         Common/Common.h \
         Common/Histograms.h \
+        Common/Plots.h \
         Common/Traces.h \
         Common/Utils.h \
         Presentation/ConfigDisplayWindow.h \
+        Presentation/PotPositionWindow.h \
         Processing/AnalyzerManager.h \
         Processing/PreProcessing.h \
         Processing/DayOrNight.h \

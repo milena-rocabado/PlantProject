@@ -1,5 +1,6 @@
 #include "PreProcessing.h"
 #include "Traces.h"
+#include "Plots.h"
 
 //------------------------------------------------------------------------------
 void PreProcessing::initialize() {
@@ -15,19 +16,12 @@ void PreProcessing::initialize() {
 //------------------------------------------------------------------------------
 void PreProcessing::process(const cv::Mat &input, cv::Mat &output) {
     TRACE_P(pos_, "> PreProcessing::process(%d)", pos_);
+    assert(input.channels() == 1);
 
-//    // Gaussian blur
-//    cv::GaussianBlur(input, output, cv::Size(K_SIZE, K_SIZE), 0);
-//    TRACE_P(pos_, "* PreProcessing::process(%d): blurred", pos_);
+    DUMP_HIST_P(pos_, input(roi_), wd_, "input_hist_%d.png", pos_);
 
-    output = input;
-    // to grayscale
-    toGrayscale_(output, output);
-    TRACE_P(pos_, "* PreProcessing::process(%d): to grayscale", pos_);
-    DUMP_HIST_P(pos_, output(roi_), wd_, "input_hist_%d.png", pos_);
-
-    // stretch hist
-    stretchHistogram_(output, output);
+    // Stretch hist
+    stretchHistogram_(input, output);
     TRACE_P(pos_, "* PreProcessing::process(%d): histogram stretched", pos_);
     DUMP_HIST_P(pos_, output(roi_), wd_, "stretched_hist_%d.png", pos_);
 

@@ -12,13 +12,15 @@ public:
 
     void process(const cv::Mat &input,cv::Mat &l_output,  cv::Mat &r_output, cv::Mat &stem);
 
-    void setInitialPosition(int pos) { pos_ = pos; }
+    void setPosition(int pos) { pos_ = pos; }
 
     void setROI(const cv::Rect &roi) { roi_ = roi; }
 
     int getPotPosition() { return potPosition_; }
 
     void setPotPosition(int pos) { potPosition_ = pos; }
+
+    void resetPotPosition() { potPosition_ = DEFAULT_POT_POSITION; }
 
     void setDumpDirectory(std::string dir) { wd_ = dir; }
 

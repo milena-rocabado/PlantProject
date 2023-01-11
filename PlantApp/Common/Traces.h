@@ -3,6 +3,8 @@
 
 #ifdef TRACE_ON
 
+#include <iostream>
+
 #define N_TRACE (100)
 
 #define TRACE(...) { \
@@ -57,10 +59,6 @@
 #define DUMP_P(pos__, mat__, wd__, file__, ...) { \
     DUMP_IF((pos__ % N_TRACE == 0), mat__, wd__, file__, __VA_ARGS__); \
 }
-
-//#define DUMP_P(pos__, mat__, wd__, file__, ...) { \
-//    DUMP(mat__, wd__, file__, __VA_ARGS__); \
-//}
 
 #else
 

@@ -1,7 +1,7 @@
 #ifndef ROIWINDOW_H
 #define ROIWINDOW_H
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core/mat.hpp>
 
 class ROIWindow
 {

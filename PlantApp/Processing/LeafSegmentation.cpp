@@ -180,7 +180,6 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
 
         // For rows where stem disappears, not found after searching within radius
         if (! found) {
-            TRACE_P(pos_,"* LeafSegmentation::search_(%d): row %d, not found with radius %d", pos_, row, radius);
             // Increment search radius
             radius = maxWidthReached_ ? std::min(MAX_RADIUS, radius+2) : radius+2;
             // Use last value
@@ -189,7 +188,7 @@ void LeafSegmentation::search_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef) {
             stem_[row] = last;
         } else {
             if (radius != 1)
-                TRACE_P(pos_, "* LeafSegmentation::search_(%d): stem found again, reset radius", pos_);
+                TRACE_P(pos_, "* LeafSegmentation::search_(%d): stem found again with radius %d, reset radius", pos_, radius);
             // Stem found again
             radius = 1;
         }
@@ -200,7 +199,7 @@ void LeafSegmentation::colorFromVector_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rR
     assert(lastStem_.size() != 0);
 
     int lastVal = -1;
-    for (int row = 0; row < lastStem_.size(); row++) {
+    for (uint row = 0; row < lastStem_.size(); row++) {
         int col = lastStem_[row];
 
         if (col == -1) {
@@ -242,8 +241,6 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &left, cv::Mat &rig
     left = input.clone();
 
     // Reference to region of interest
-    cv::rectangle(stem, roi_, common::RED);
-
     cv::Mat ref = stem(roi_);
     cv::Mat lRef = left(roi_);
     cv::Mat rRef = right(roi_);
@@ -277,8 +274,6 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &left, cv::Mat &rig
             ref = stem(roi_);
             lRef = left(roi_);
             rRef = right(roi_);
-            hidePlantPot_(lRef);
-            hidePlantPot_(rRef);
             // Use stem from previous processing
             colorFromVector_(ref, lRef, rRef);
         }

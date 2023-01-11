@@ -13,7 +13,7 @@ public:
 
     void process(const cv::Mat &input, cv::Mat &output);
 
-    void setInitialPosition(int pos) { pos_ = pos; }
+    void setPosition(int pos) { pos_ = pos; }
 
     void setInputSize(const cv::Size &size){ inputSize_ = size; }
 

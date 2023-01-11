@@ -11,23 +11,40 @@
 #include "LeafSegmentation.h"
 #include "EllipseFitting.h"
 
-// noooooooo
-#include <chrono>
-
 class AnalyzerManager
 {
 public:
+    // Return codes ------------------------------------------------------------
+
+    enum SetInputRetValues {
+        INPUT_SET,
+        PATH_NOT_VALID,
+        VIDEO_NOT_OPEN
+    };
+
+    enum SetOutputRetValues {
+        OUTPUT_SET,
+        OUTPATH_NOENT,
+        OUTPATH_NOACCESS,
+        OUTPATH_ERROR
+    };
+
+    enum InitializeRetValues {
+        INITIALIZED,
+        OUTFILE_ERROR
+    };
+
+public:
+
     AnalyzerManager();
 
     ~AnalyzerManager();
 
-    bool setInputPath(std::string inputPath);
+    SetInputRetValues setInputPath(std::string inputPath);
 
-    bool setOutputDirectory(std::string path);
+    SetOutputRetValues setOutputDirectory(std::string path);
 
-    bool initialize();
-
-    void launchProcessing();
+    InitializeRetValues initialize();
 
     void run();
 
@@ -35,7 +52,11 @@ public:
 
     void setROI(cv::Rect roi) { roi_ = roi; }
 
+    void resetROI();
+
     void setPotPosition(int pos);
+
+    void resetPotPosition();
 
     void setInitialPosition(int initPos);
 
@@ -59,24 +80,10 @@ public:
 
     int getPotPosition();
 
-    void resetROI();
-
-    // Subscriber --------------------------------------------------------------
-    class Subscriber {
-    public:
-        virtual ~Subscriber();
-
-        virtual void updateProgress(double progress) = 0;
-    };
-
-    void setSubscriber(Subscriber *sub) { subscriber_ = sub; }
-
 private:
     void dumpDataToStream_();
 
-    void dumpVideoOutput_();
-
-    void updateSubscriber_(int pos);
+    void dumpVideoOutput_(int);
 
     void initializeWindows_();
 
@@ -118,9 +125,6 @@ private:
     // Array of mats that will be shown in video output;
     cv::Mat *outputs_[WIN_NUM];
 
-    // For progress updates
-    Subscriber *subscriber_;
-
     // Containers --------------------------------------------------------------
 
     // Frame input from video
@@ -135,7 +139,9 @@ private:
     cv::Mat stem_;
     // Ellipse fitting outputs
     cv::Mat leftEllipse_;
+    cv::Mat leftContours_;
     cv::Mat rightEllipse_;
+    cv::Mat rightContours_;
 
     // Data output
     common::OutputDataContainer outDataContainer_;

@@ -19,34 +19,6 @@ typedef struct {
     }
 } Histogram_t;
 
-void plotHist(const cv::Mat &hist, cv::Mat &output, int n = -1);
-
 }
-
-#ifdef DUMP_ON
-
-#define DUMP_HIST(mat__, wd__, file__, ...) { \
-    hist::Histogram_t calc__; \
-    cv::Mat hist__, plot__; \
-    calc__(mat__, hist__); \
-    hist::plotHist(hist__, plot__); \
-    \
-    char buf__[256]; \
-    std::sprintf(buf__, file__, __VA_ARGS__); \
-    cv::imwrite(std::string(wd__) + std::string(buf__), plot__); \
-}
-
-#define DUMP_HIST_P(pos__, mat__, wd__, file__, ...) { \
-    if (pos__ % N_TRACE == 0) { \
-        DUMP_HIST(mat__, wd__, file__, __VA_ARGS__); \
-    } \
-}
-
-#else
-
-#define DUMP_HIST(mat__, wd__, file__, ...) {}
-#define DUMP_HIST_P(pos__, mat__, wd__, file__, ...) {}
-
-#endif
 
 #endif // HISTOGRAMS_H

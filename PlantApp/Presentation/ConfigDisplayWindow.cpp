@@ -16,12 +16,12 @@ void ConfigDisplayWindow::setImage(const cv::Mat &image) {
 void ConfigDisplayWindow::display(const cv::Rect &roi, int yPot) {
     TRACE("> ConfigDisplayWindow::display(roi = (%d x %d), yPot = %d)",
           roi.width, roi.height, yPot);
-    TRACE("ConfigDisplayWindow::display(): image_.size = (%d x %d)",
+    TRACE("* ConfigDisplayWindow::display(): image_.size = (%d x %d)",
           image_.cols, image_.rows);
 
     cv::Mat canvas = image_.clone();
 
-    TRACE("ConfigDisplayWindow::display(): canvas.size = (%d x %d)",
+    TRACE("* ConfigDisplayWindow::display(): canvas.size = (%d x %d)",
           canvas.cols, canvas.rows);
 
     // ROI with crosshair

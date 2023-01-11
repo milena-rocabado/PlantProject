@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>456</width>
-    <height>584</height>
+    <height>609</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,20 +69,43 @@
        <item>
         <widget class="QGroupBox" name="gbROI">
          <property name="title">
-          <string>Region of Interest</string>
+          <string>Region of interest</string>
          </property>
          <layout class="QHBoxLayout" name="horizontalLayout">
           <item>
            <widget class="QPushButton" name="pbSetROI">
             <property name="text">
-             <string>Select</string>
+             <string>Select region of interest</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="pbResetROI">
             <property name="text">
-             <string>Reset Region of Interest</string>
+             <string>Reset region of interest</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupBox">
+         <property name="title">
+          <string>Pot position</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <item>
+           <widget class="QPushButton" name="pbSetPotPos">
+            <property name="text">
+             <string>Select pot position</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pbResetPotPos">
+            <property name="text">
+             <string>Reset pot position</string>
             </property>
            </widget>
           </item>
@@ -213,18 +236,42 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="pbProcess">
-      <property name="text">
-       <string>Iniciar procesamiento</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QProgressBar" name="progressBar">
-      <property name="value">
-       <number>24</number>
-      </property>
-     </widget>
+     <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="0,0">
+      <item>
+       <widget class="QPushButton" name="statusIndicator">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>75</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">color: rgb(0, 0, 0);
+background-color: rgb(150, 150, 150);
+border-color: rgb(161, 161, 161);</string>
+        </property>
+        <property name="text">
+         <string>Waiting</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="pbProcess">
+        <property name="text">
+         <string>Iniciar procesamiento</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
     </item>
    </layout>
   </widget>

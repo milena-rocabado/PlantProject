@@ -1,20 +1,17 @@
 #include "AnalyzerManager.h"
 
 #include <unistd.h>
-#include <thread>
 
 #include "Traces.h"
 #include "Utils.h"
 
 //------------------------------------------------------------------------------
-AnalyzerManager::Subscriber::~Subscriber() {}
-//------------------------------------------------------------------------------
 const std::string AnalyzerManager::WIN_NAMES[] {
-    "right_leaf",
-    "thresholding",
-    "left_leaf",
+    "right_contours",
+    "stem1",
+    "left_contours",
     "right_ellipses",
-    "stem",
+    "stem2",
     "left_ellipses",
 };
 //------------------------------------------------------------------------------
@@ -33,6 +30,10 @@ AnalyzerManager::~AnalyzerManager() {
 //------------------------------------------------------------------------------
 void AnalyzerManager::setPotPosition(int pos) {
     leafSegmentation_->setPotPosition(pos);
+}
+//------------------------------------------------------------------------------
+void AnalyzerManager::resetPotPosition() {
+    leafSegmentation_->resetPotPosition();
 }
 //------------------------------------------------------------------------------
 void AnalyzerManager::setInitialPosition(int initPos) {
@@ -95,28 +96,7 @@ void AnalyzerManager::resetROI() {
 }
 //------------------------------------------------------------------------------
 //------------------------------------------------------------------------------
-bool AnalyzerManager::setOutputDirectory(std::string path) {
-    assert(video_.isOpened());
-
-    int retVal = access(path.c_str(), R_OK | W_OK);
-
-    if (retVal != 0) {
-        if (errno == ENOENT) {
-            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Directory \"%s\" "
-                      "does not exist", path.c_str());
-        }
-        else if (errno == EACCES) {
-            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Access denied to "
-                      "directory \"%s\"", path.c_str())
-        }
-        return false;
-    }
-
-    workingDir_ = path;
-    return true;
-}
-//------------------------------------------------------------------------------
-bool AnalyzerManager::setInputPath(std::string inputPath) {
+AnalyzerManager::SetInputRetValues AnalyzerManager::setInputPath(std::string inputPath) {
     TRACE("> AnalyzerManager::setInputPath(%s)", inputPath.c_str());
 
     bool valid = utils::parseFilePath(inputPath, workingDir_, outDataFn_);
@@ -125,7 +105,7 @@ bool AnalyzerManager::setInputPath(std::string inputPath) {
     if (!valid || workingDir_.empty() || outDataFn_.empty()) {
         TRACE_ERR("* AnalyzerManager::setInputPath: input \"%s\" path not valid",
                   inputPath.c_str());
-        return false;
+        return PATH_NOT_VALID;
     }
 
     if (video_.isOpened())
@@ -136,7 +116,7 @@ bool AnalyzerManager::setInputPath(std::string inputPath) {
     if (!video_.isOpened()) {
         TRACE_ERR("* AnalyzerManager::setInputPath: Error opening provided video file \"%s\"",
                   inputPath.c_str());
-        return false;
+        return VIDEO_NOT_OPEN;
     }
 
     outDataFn_ += ".csv";
@@ -147,14 +127,37 @@ bool AnalyzerManager::setInputPath(std::string inputPath) {
     TRACE("* AnalyzerManager::setInputPath: workingDir = \"%s\" output data file = \"%s\"",
           workingDir_.c_str(), outDataFn_.c_str());
     TRACE("< AnalyzerManager::setInputPath");
-    return true;
+    return INPUT_SET;
+}
+//------------------------------------------------------------------------------
+AnalyzerManager::SetOutputRetValues AnalyzerManager::setOutputDirectory(std::string path) {
+    assert(video_.isOpened());
+
+    int retVal = access(path.c_str(), R_OK | W_OK);
+
+    if (retVal != 0) {
+        if (errno == ENOENT) {
+            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Directory \"%s\" "
+                      "does not exist", path.c_str());
+            return OUTPATH_NOENT;
+        }
+        else if (errno == EACCES) {
+            TRACE_ERR("* AnalyzerManager::setOutputDirectory: Access denied to "
+                      "directory \"%s\"", path.c_str());
+            return OUTPATH_NOACCESS;
+        }
+        return OUTPATH_ERROR;
+    }
+
+    workingDir_ = path;
+    return OUTPUT_SET;
 }
 //------------------------------------------------------------------------------
 void AnalyzerManager::initializeWindows_() {
     int rows {2}, cols {3};
     int padding = 10;
     int HSpacing = roi_.width;
-    int VSpacing = roi_.height + 10;
+    int VSpacing = roi_.height + 20;
 
     for (int i = 0; i < rows; ++i) {
         for (int j = 0; j < cols; ++j) {
@@ -166,40 +169,42 @@ void AnalyzerManager::initializeWindows_() {
         }
     }
 
-    outputs_[0] = &leftLeaf_;
-    outputs_[1] = &threshOut_;
-    outputs_[2] = &rightLeaf_;
+    outputs_[0] = &leftContours_;
+    outputs_[1] = &stem_;
+    outputs_[2] = &rightContours_;
     outputs_[3] = &leftEllipse_;
     outputs_[4] = &stem_;
     outputs_[5] = &rightEllipse_;
 }
 //------------------------------------------------------------------------------
-bool AnalyzerManager::initialize() {
+AnalyzerManager::InitializeRetValues AnalyzerManager::initialize() {
     assert(video_.isOpened());
+    assert(initPos_ <= endPos_);
 
     cv::Size inputSize(static_cast<int>(video_.get(cv::CAP_PROP_FRAME_WIDTH)),
                        static_cast<int>(video_.get(cv::CAP_PROP_FRAME_HEIGHT)));
 
     // Initialize stage classes
-    preProcessing_->setInitialPosition(initPos_);
+    preProcessing_->setPosition(initPos_);
     preProcessing_->setInputSize(inputSize);
     preProcessing_->setROI(roi_);
     preProcessing_->setDumpDirectory(workingDir_ + "Ejemplos/");
     preProcessing_->initialize();
 
     dayOrNight_->setInitialPosition(initPos_);
+    dayOrNight_->setDumpDirectory(workingDir_ + "Ejemplos/");
 
-    thresholding_->setInitialPosition(initPos_);
+    thresholding_->setPosition(initPos_);
     thresholding_->setROI(roi_);
     thresholding_->setInputSize(inputSize);
     thresholding_->setDumpDirectory(workingDir_ + "Ejemplos/");
 
-    leafSegmentation_->setInitialPosition(initPos_);
+    leafSegmentation_->setPosition(initPos_);
     leafSegmentation_->setROI(roi_);
     leafSegmentation_->setDumpDirectory(workingDir_ + "Ejemplos/");
     leafSegmentation_->initialize();
 
-    ellipseFitting_->setInitialPosition(initPos_);
+    ellipseFitting_->setPosition(initPos_);
     ellipseFitting_->setROI(roi_);
     ellipseFitting_->setDumpDirectory(workingDir_ + "Ejemplos/");
 
@@ -209,7 +214,7 @@ bool AnalyzerManager::initialize() {
     if (!outDataFs_ || !outDataFs_.is_open()) {
         TRACE_ERR("* AnalyzerManager::initialize(): unable to open output data file \"%s\"",
                   filepath.c_str());
-        return false;
+        return OUTFILE_ERROR;
     } else {
         outDataFs_ << "Frame,Day/Night,Left_leaf_angle,Right_leaf_angle" << std::endl;
     }
@@ -220,128 +225,129 @@ bool AnalyzerManager::initialize() {
         initializeWindows_();
     }
 
-    return true;
+    return INITIALIZED;
 }
 //------------------------------------------------------------------------------
 void AnalyzerManager::dumpDataToStream_() {
-    int index = initPos_ % common::CONTAINER_SIZE;
-    for (int i = 0; i < common::CONTAINER_SIZE; ++i) {
+    for (int index = 0; index < common::CONTAINER_SIZE; ++index) {
         outDataFs_ << outDataContainer_[index].pos << ","
                    << outDataContainer_[index].interval << ","
                    << outDataContainer_[index].leftAngle << ","
                    << outDataContainer_[index].rightAngle << std::endl;
-        index = ++index % common::CONTAINER_SIZE;
     }
 }
 //------------------------------------------------------------------------------
-void AnalyzerManager::dumpVideoOutput_() {
+void AnalyzerManager::dumpVideoOutput_(int pos) {
     for (int i = 0; i < WIN_NUM; i++) {
         // ----
-        cv::putText((*outputs_[i])(roi_), std::to_string(pos_), cv::Point(0, 25),
+        cv::putText((*outputs_[i])(roi_), std::to_string(pos), cv::Point(0, 25),
                     cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255));
         // ----
         cv::imshow(WIN_NAMES[i], (*outputs_[i])(roi_));
     }
-    //_________
-    cv::imshow("left-contours", ellipseFitting_->getContoursLOut());
-    cv::imshow("right-contours", ellipseFitting_->getContoursROut());
-    //_________
+//    //_________
+//    cv::imshow("left-contours", ellipseFitting_->getContoursLOut());
+//    cv::imshow("right-contours", ellipseFitting_->getContoursROut());
+//    //_________
 
     cv::waitKey(msecs_ - 15);
 }
 //------------------------------------------------------------------------------
-void AnalyzerManager::updateSubscriber_(int pos) {
-    double progress = static_cast<double>(pos - initPos_) / (endPos_ - initPos_);
-    std::cout << "****************** progress = " << progress << std::endl;
-    subscriber_->updateProgress(progress);
-}
-//------------------------------------------------------------------------------
 void AnalyzerManager::run() {
+    TRACE("> AnalyzerManager::run(%d, %d)", initPos_, endPos_);
     assert(video_.isOpened());
-
-    TRACE("* AnalyzerManager::run(): loop begin");
+    TRACE("* AnalyzerManager::run(%d, %d): assert 1", initPos_, endPos_);
+    assert(initPos_ <= endPos_);
+    TRACE("* AnalyzerManager::run(%d, %d): assert 2", initPos_, endPos_);
 
     video_.set(cv::CAP_PROP_POS_FRAMES, initPos_);
     TRACE("* AnalyzerManager::run(): position set");
 
-    for (pos_ = initPos_; pos_ <= endPos_; pos_++) {
+    for (int pos = initPos_, num = 0; pos <= endPos_; pos++, num++) {
 
         // Extract frame
         video_ >> input_;
-        TRACE_P(pos_, "* AnalyzerManager::run(): frame extracted");
+        TRACE_P(pos, "* AnalyzerManager::run(%d): frame %.0f extracted",
+                pos, video_.get(cv::CAP_PROP_POS_FRAMES));
 
         if (input_.empty()) {
-            TRACE_ERR("* AnalyzerManager::run(): unexpected end at position %d", pos_);
+            TRACE_ERR("* AnalyzerManager::run(): unexpected end at position %d", pos);
             return;
         }
 
-        int index = pos_ % common::CONTAINER_SIZE;
-        outDataContainer_[index].pos = pos_;
+        // Input must be grayscale
+        cv::cvtColor(input_, input_, cv::COLOR_BGR2GRAY);
+
+        int index = num % common::CONTAINER_SIZE;
+        outDataContainer_[index].pos = pos;
         outDataContainer_[index].interval = interval_;
-        TRACE_P(pos_, "* AnalyzerManager::run(): output data set");
+        TRACE_P(pos, "* AnalyzerManager::run(%d): output data set", pos);
 
         // Day or night
-        dayOrNight_->process(input_, interval_, outDataContainer_);
+        int bp = dayOrNight_->process(input_, interval_);
+
+        if (bp != -1) { // Backtracking to breakpoint position
+            preProcessing_->setPosition(bp);
+            thresholding_->setPosition(bp);
+            thresholding_->setSearchThreshFlag();
+            leafSegmentation_->setPosition(bp);
+            ellipseFitting_->setPosition(bp);
+
+            pos = bp - 1; // backtrack to position bp
+            video_.set(cv::CAP_PROP_POS_FRAMES, bp);
+
+            TRACE("* AnalyzerManager::run(%d): BACKTRACKING !!!", pos);
+            continue;
+        }
 
         // Preprocessing
         preProcessing_->process(input_, preOut_);
 
         // Thresholding
-        thresholding_->process(preOut_, interval_, threshOut_);
+        thresholding_->process(preOut_, threshOut_);
 
         // Segmentation
         leafSegmentation_->process(threshOut_, leftLeaf_, rightLeaf_, stem_);
 
         // Ellipse fitting
-//        ellipseFitting_->process(leftLeaf_, threshOut_, leftEllipse_,
-//                        outDataContainer_[index].leftAngle,
-//                        common::LEFT);
-//        ellipseFitting_->process(rightLeaf_, threshOut_, rightEllipse_,
-//                        outDataContainer_[index].rightAngle,
-//                        common::RIGHT);
-        ellipseFitting_->process(leftLeaf_, leftLeaf_, leftEllipse_,
+        ellipseFitting_->process(leftLeaf_, leftEllipse_, leftContours_,
                                  outDataContainer_[index].leftAngle,
                                  common::LEFT);
-        ellipseFitting_->process(rightLeaf_, rightLeaf_, rightEllipse_,
+        ellipseFitting_->process(rightLeaf_, rightEllipse_, rightContours_,
                                  outDataContainer_[index].rightAngle,
                                  common::RIGHT);
 
         // Dump data to file stream
-        if (index == common::CONTAINER_SIZE - 1)
+        if (index == common::CONTAINER_SIZE - 1) {
+            TRACE("* AnalyzerManager::run(): pos = %d -> dumping output data", pos);
             dumpDataToStream_();
+        }
         // Update subscriber
-        if (pos_ % (5 * static_cast<int>(video_.get(cv::CAP_PROP_FPS))) == 0) {
+        if (pos % (5 * static_cast<int>(video_.get(cv::CAP_PROP_FPS))) == 0) {
             TRACE("* AnalyzerManager::run(): %d seconds analyzed",
-                  pos_ / (5 * static_cast<int>(video_.get(cv::CAP_PROP_FPS))));
-            if (subscriber_)
-                updateSubscriber_(pos_);
+                  pos / (5 * static_cast<int>(video_.get(cv::CAP_PROP_FPS))));
         }
 
         // Video output
         if (videoOutputFlag_) {
-            dumpVideoOutput_();
+            dumpVideoOutput_(pos);
         }
 
         // DUMPS
-//        DUMP_P(pos_, input_, workingDir_, "Ejemplos/input_%d.png", pos_);
-        DUMP_P(pos_, preOut_, workingDir_, "Ejemplos/preproc_%d.png", pos_);
-//        DUMP_P(pos_, threshOut_, workingDir_, "Ejemplos/thresh_%d.png", pos_);
-//        DUMP_P(pos_, leftLeaf_, workingDir_, "Ejemplos/leaf_l_%d.png", pos_);
-//        DUMP_P(pos_, stem_, workingDir_, "Ejemplos/stem_%d.png", pos_);
-//        DUMP_P(pos_, rightLeaf_, workingDir_, "Ejemplos/leaf_r_%d.png", pos_);
-//        DUMP_P(pos_, leftEllipse_, workingDir_, "Ejemplos/ellipse_l_%d.png", pos_);
-//        DUMP_P(pos_, rightEllipse_, workingDir_, "Ejemplos/ellipse_r_%d.png", pos_);
+        /*DUMP_P(pos, input_, workingDir_, "Ejemplos/input_%d.png", pos);*/
+        DUMP_P(pos, preOut_, workingDir_, "Ejemplos/preproc_%d.png", pos);
+        DUMP_P(pos, threshOut_, workingDir_, "Ejemplos/thresh_%d.png", pos);
+        /*DUMP_P(pos, leftLeaf_, workingDir_, "Ejemplos/leaf_l_%d.png", pos);
+        DUMP_P(pos, stem_, workingDir_, "Ejemplos/stem_%d.png", pos);
+        DUMP_P(pos, rightLeaf_, workingDir_, "Ejemplos/leaf_r_%d.png", pos);
+        DUMP_P(pos, leftEllipse_, workingDir_, "Ejemplos/ellipse_l_%d.png", pos);
+        DUMP_P(pos, rightEllipse_, workingDir_, "Ejemplos/ellipse_r_%d.png", pos);*/
     }
 
     if (videoOutputFlag_) {
         cv::destroyAllWindows();
     }
     outDataFs_.close();
-}
-//------------------------------------------------------------------------------
-void AnalyzerManager::launchProcessing() {
-    std::thread thr(&AnalyzerManager::run, this);
-    thr.detach();
-//    run();
+    TRACE("< AnalyzerManager::run(%d, %d)", initPos_, endPos_);
 }
 //------------------------------------------------------------------------------
