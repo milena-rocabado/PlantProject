@@ -26,7 +26,7 @@
 }
 
 #define TRACE_P(pos__, ...) { \
-    TRACE_IF((pos__ % N_TRACE == 0), __VA_ARGS__); \
+    TRACE_IF(/*pos__ % N_TRACE == 0 ||*/ pos__ == 150 || pos__ == 750, __VA_ARGS__); \
 }
 
 #else

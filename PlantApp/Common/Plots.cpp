@@ -30,9 +30,9 @@ void plotHist(const cv::Mat &hist, cv::Mat &output, int n) {
 
     double factor;
     if (hist.size[0] < hist::HIST_SIZE)
-        factor = 0.005586;
+        factor = 0.005586*2;
     else
-        factor = 0.038616*2;
+        factor = 0.038616;
     // { 0.010284 }; //{ 0.011717 };
 //    minMaxLoc(hist, nullptr, &factor);
 //    factor = area_size.height / factor;

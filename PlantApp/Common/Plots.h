@@ -29,7 +29,7 @@ void plotVector(std::vector<double> vector, cv::Mat &output, int accum = VEC_PLO
 }
 
 #define DUMP_HIST_P(pos__, mat__, wd__, file__, ...) { \
-    if (pos__ % N_TRACE == 0) { \
+    if (/*pos__ % N_TRACE == 0 ||*/ pos__ == 150 || pos__ == 750) { \
         DUMP_HIST(mat__, wd__, file__, __VA_ARGS__); \
     } \
 }
