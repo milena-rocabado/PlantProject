@@ -3,6 +3,18 @@
 #include "Colors.h"
 
 //------------------------------------------------------------------------------
+EllipseFitting::EllipseFitting()
+    : lastLAngle_(-1.f)
+    , lastRAngle_(-1.f)
+    , dump_(false)
+{}
+//------------------------------------------------------------------------------
+void EllipseFitting::initialize() {
+    lastLAngle_ = -1.f;
+    lastRAngle_ = -1.f;
+    dump_ = false;
+}
+//------------------------------------------------------------------------------
 void EllipseFitting::drawEllipse_(const cv::RotatedRect &ellipse, cv::Mat &canvas) {
     cv::Point2f points[4];
     ellipse.points(points);
@@ -11,10 +23,20 @@ void EllipseFitting::drawEllipse_(const cv::RotatedRect &ellipse, cv::Mat &canva
         return cv::Point((a.x + b.x)/2, (a.y + b.y)/2);
     };
 
-    cv::line(canvas, middle(points[0], points[1]), middle(points[2], points[3]), common::GREEN);
-    cv::line(canvas, middle(points[1], points[2]), middle(points[3], points[0]), common::GREEN);
+    cv::line(canvas, middle(points[0], points[1]), middle(points[2], points[3]), common::GREEN, 2);
+    cv::line(canvas, middle(points[1], points[2]), middle(points[3], points[0]), common::GREEN, 2);
 
-    cv::ellipse(canvas, ellipse, common::RED);
+//    if (side_ == common::RIGHT) {
+//        cv::Point a = middle(points[3], points[0]);
+//        cv::line(canvas, a, cv::Point(a.x, a.y + static_cast<int>(ellipse.size.height)), common::BLUE);
+//        cv::putText(canvas, std::to_string(ellipse.angle), points[0], cv::FONT_HERSHEY_SIMPLEX, 0.3, common::MAGENTA);
+//    } else {
+//        cv::Point a = middle(points[1], points[2]);
+//        cv::line(canvas, a, cv::Point(a.x, a.y + static_cast<int>(ellipse.size.height)), common::BLUE);
+//        cv::putText(canvas, std::to_string(ellipse.angle), points[1], cv::FONT_HERSHEY_SIMPLEX, 0.3, common::MAGENTA);
+//    }
+
+    cv::ellipse(canvas, ellipse, common::RED, 2);
 }
 //------------------------------------------------------------------------------
 void EllipseFitting::findLeafContour_(const std::vector<std::vector<cv::Point>> &contours,
@@ -31,7 +53,7 @@ void EllipseFitting::findLeafContour_(const std::vector<std::vector<cv::Point>> 
     int topY { 5 };
 
     bool (*better)(cv::Rect a, cv::Rect b) = (side_ == common::LEFT)
-            ? [] (cv::Rect a, cv::Rect b) -> bool { return a.x < b.x; } // pensar: <= ?
+            ? [] (cv::Rect a, cv::Rect b) -> bool { return a.x < b.x; }
             : [] (cv::Rect a, cv::Rect b) -> bool { return a.x + a.width > b.x + b.width; };
 
     // For each contour
@@ -44,10 +66,10 @@ void EllipseFitting::findLeafContour_(const std::vector<std::vector<cv::Point>> 
         if (bRect.y == 0 || bRect.y < topY) {
             TRACE_P(pos_, "* EllipseFitting::findLeafContour_(): discarded top contour (%d, %d) [%d x %d]",
                     bRect.x, bRect.y, bRect.width, bRect.height);
-            cv::rectangle(contoursOut, bRect, common::YELLOW);
-            cv::putText(contoursOut, "A",
-                        cv::Point(bRect.x, bRect.y + 10),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::YELLOW);
+            cv::rectangle(contoursOut, bRect, common::MAGENTA);
+//            cv::putText(contoursOut, "A",
+//                        cv::Point(bRect.x, bRect.y + 10),
+//                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::YELLOW);
 
             if (bRect.height > topY) {
                 topY = bRect.height;
@@ -59,10 +81,10 @@ void EllipseFitting::findLeafContour_(const std::vector<std::vector<cv::Point>> 
         else if (bRect.y + bRect.height >= roi_.height || floorY <= bRect.y) {
             TRACE_P(pos_, "* EllipseFitting::findLeafContour_(): discarded bottom contour (%d, %d) [%d x %d]",
                     bRect.x, bRect.y, bRect.width, bRect.height);
-            cv::rectangle(contoursOut, bRect, common::YELLOW);
-            cv::putText(contoursOut, "B",
-                        cv::Point(bRect.x, bRect.y),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
+            cv::rectangle(contoursOut, bRect, common::MAGENTA);
+//            cv::putText(contoursOut, "B",
+//                        cv::Point(bRect.x, bRect.y),
+//                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
 
             // Store floor Y position (if it's higher in image -> lower value)
             if (bRect.y < floorY) {
@@ -115,28 +137,28 @@ void EllipseFitting::findLeafContour_(const std::vector<std::vector<cv::Point>> 
             TRACE_P(pos_, "\tx discarded soil contour (%d, %d) [%d x %d]",
                     rects[j].second.x, rects[j].second.y,
                     rects[j].second.width, rects[j].second.height);
-            cv::rectangle(contoursOut, rects[j].second, common::YELLOW);
-            cv::putText(contoursOut, "C",
-                        cv::Point(rects[j].second.x, rects[j].second.y),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
+            cv::rectangle(contoursOut, rects[j].second, common::MAGENTA);
+//            cv::putText(contoursOut, "C",
+//                        cv::Point(rects[j].second.x, rects[j].second.y),
+//                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
         } else if ((lastInserted != -1) && (rects[j].second.y > rects[lastInserted].second.y)) {
             // CASE D
             TRACE_P(pos_, "\tx discarded top contour (%d, %d) [%d x %d]",
                     rects[j].second.x, rects[j].second.y,
                     rects[j].second.width, rects[j].second.height);
-            cv::rectangle(contoursOut, rects[j].second, common::YELLOW);
-            cv::putText(contoursOut, "D",
-                        cv::Point(rects[j].second.x, rects[j].second.y),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
+            cv::rectangle(contoursOut, rects[j].second, common::MAGENTA);
+//            cv::putText(contoursOut, "D",
+//                        cv::Point(rects[j].second.x, rects[j].second.y),
+//                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
         } else if ((lastInserted != -1) && (rects[lastInserted].second.y - // CASE E
                    (rects[j].second.y + rects[j].second.width) > MAX_CONTOUR_DISTANCE)) {
             TRACE_P(pos_, "\tx discarded top leaf contour (%d, %d) [%d x %d]",
                     rects[j].second.x, rects[j].second.y,
                     rects[j].second.width, rects[j].second.height);
-            cv::rectangle(contoursOut, rects[j].second, common::YELLOW);
-            cv::putText(contoursOut, "E",
-                        cv::Point(rects[j].second.x, rects[j].second.y),
-                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
+            cv::rectangle(contoursOut, rects[j].second, common::MAGENTA);
+//            cv::putText(contoursOut, "E",
+//                        cv::Point(rects[j].second.x, rects[j].second.y),
+//                        cv::FONT_HERSHEY_SIMPLEX, 0.3, common::GREEN);
         } else {
             TRACE_P(pos_, "\t* valid contour (%d, %d) [%d x %d]",
                     rects[j].second.x, rects[j].second.y,
@@ -184,9 +206,12 @@ void EllipseFitting::fitEllipse_(const cv::Mat &input, cv::Mat &ellipseOut,
 
     // Data output
     angle = side_ == common::LEFT ? ellipseRect.angle : 180 - ellipseRect.angle;
+    TRACE_P(pos_, "* EllipseFitting::fitEllipse_(%d, %s): angle = %.4f", pos_,
+            side_ == common::LEFT ? "left" : "right", static_cast<double>(angle));
 }
 //------------------------------------------------------------------------------
 void EllipseFitting::checkAngle_(float currentAngle, float lastAngle) {
+    if (lastAngle < 0) return;
     if (abs(currentAngle - lastAngle) > MAX_DIFFERENCE) {
         TRACE_ERR("* EllipseFitting::checkAngle_(%d, %s): angle difference "
                   "suspiciously big: current angle = %.4f previous angle = %.4f",
@@ -221,25 +246,28 @@ void EllipseFitting::process(const cv::Mat &leaf,
             side == common::LEFT ? "left" : "right");
 
     if (side == common::LEFT) {
-//        //_DELETE___
-//        if (pos_ >= 3018 && pos_ <= 3020){ //3018
-//            DUMP(contoursDrawing, wd_, "contours_r_%d.png", pos_);
-//        } //___
 
-        DUMP_P(pos_, contoursDrawing, wd_, "contours_l_%d.png", pos_);
+        DUMP_P(pos_, contoursDrawing(roi_), wd_, "contours_l_%d.png", pos_);
+
+        if (pos_ >= 0 && pos_ <= 30) {
+            DUMP(contoursDrawing(roi_), wd_, "contours_l_%d.png", pos_);
+            DUMP(ellipseDrawing(roi_), wd_, "ellipse_l_%d.png", pos_);
+        }
 
         checkAngle_(angle, lastLAngle_);
         lastLAngle_ = angle;
 
-        DUMP_IF(dump_, contoursDrawing, wd_, "debug_contours_l_%d.png", pos_);
+        DUMP_IF(dump_, contoursDrawing(roi_), wd_, "debug_contours_l_%d.png", pos_);
+        DUMP_IF(dump_, ellipseDrawing(roi_), wd_, "debug_ellipse_l_%d.png", pos_);
         dump_ = false;
     } else {
-        DUMP_P(pos_, contoursDrawing, wd_, "contours_r_%d.png", pos_);
+        DUMP_P(pos_, contoursDrawing(roi_), wd_, "contours_r_%d.png", pos_);
 
         checkAngle_(angle, lastRAngle_);
         lastRAngle_ = angle;
 
-        DUMP_IF(dump_, contoursDrawing, wd_, "debug_contours_r_%d.png", pos_);
+        DUMP_IF(dump_, contoursDrawing(roi_), wd_, "debug_contours_r_%d.png", pos_);
+        DUMP_IF(dump_, ellipseDrawing(roi_), wd_, "debug_ellipse_r_%d.png", pos_);
         dump_ = false;
 
         pos_++;

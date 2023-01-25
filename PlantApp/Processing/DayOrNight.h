@@ -8,16 +8,20 @@
 class DayOrNight
 {
 public:
-    static constexpr int INTERVAL_MIN_LENGTH { 100 };
+    static constexpr int INTERVAL_MIN_LENGTH { 35 };
 
 public:
     DayOrNight();
 
     int process(const cv::Mat &input, common::Interval &interval);
 
-    void setInitialPosition(int pos) { initPos_ = pos; pos_ = pos; }
+    void setInitialPosition(int pos) { initPos_ = pos; pos_ = pos; lastPos_ = -1; }
 
     void setDumpDirectory(std::string dir) { wd_ = dir; }
+
+    void updateOutputData(common::OutputDataContainer &data);
+
+    void dump_brightness_plot();
 
 private:
     static constexpr double TOLERANCE { 7. };
@@ -28,7 +32,6 @@ private:
 
     void update_data_(common::OutputDataContainer &outData);
 
-    void dump_brightness_plot();
 
 private:
     // Initial position
@@ -45,6 +48,9 @@ private:
 
     // Number of times difference tolerance surpassed
     int timesSurpassed_;
+
+    // Current interval
+    common::Interval interval_;
 
     // Breakpoints found
     std::vector<int> breakpoints_;

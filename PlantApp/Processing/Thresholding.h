@@ -11,7 +11,7 @@ public:
         searchThreshFlag_(true),
         searchNum_(0),
         bgThresh_(-1.),
-        //floorThresh_(-1.),
+        floorThresh_(DEFAULT_FLOOR_THRESH),
         dump_(false)
     {}
 
@@ -35,14 +35,17 @@ private:
     // Search parameters
     static constexpr int VALLEY_THRESHOLD { 300 };
     static constexpr int VALLEY_MIN_LENGTH { 15 };
-    static constexpr int MIN_TIMES_SURPASSED { 5 };
+    static constexpr int MIN_TIMES_SURPASSED { 10 };
 
     // Recalculate threshold this many times after breakpoint
     static constexpr int RECALCULATE_THRESH_TIMES { 5 };
 
+    // Calculated threshold adjustment
+    static constexpr int THRESHOLD_ADJ { 5 };
+
     // Floor threshold search
-    //static constexpr int MIN_SEQ_SIZE { 5 };
-    //static constexpr double DEFAULT_FLOOR_THRESH { 20.0 };
+    static constexpr int MIN_SEQ_SIZE { 5 };//DELETE
+    static constexpr double DEFAULT_FLOOR_THRESH { 20.0 };//DELETE
 
 private:
     void debug_(const cv::Mat &hist, char c);
@@ -51,7 +54,7 @@ private:
 
     void findBackgroundThresh_(const cv::Mat &hist);
 
-    // void findFloorThresh_(const cv::Mat &hist); ---> testing
+     void findFloorThresh_(const cv::Mat &hist); //DELETE
 
     double otsuThreshold_(const cv::Mat &input, cv::Mat &output);
 
@@ -71,7 +74,7 @@ private:
     // Calculated threshold for background
     double bgThresh_;
     // Calculated threshold for floor
-    // double floorThresh_; --> testing
+     double floorThresh_; //DELETE
 
     // mean
     double brightness_;

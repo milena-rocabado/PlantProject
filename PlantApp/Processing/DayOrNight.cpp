@@ -8,7 +8,17 @@ DayOrNight::DayOrNight(): initPos_(-1), lastPos_(-1)
 //------------------------------------------------------------------------------
 void DayOrNight::dump_brightness_plot() {
     cv::Mat plot;
-    utils::plotVector(brightnessVec_, plot);
+    if (brightnessVec_.size()>1500)
+        utils::plotVector(brightnessVec_, plot, 10, initPos_);
+    else {
+        utils::plotVector(brightnessVec_, plot, 1, initPos_);
+    }
+    /*/__
+    for (int i = 0; i < brightnessVec_.size(); i++) {
+        std::cout << "[" << initPos_+i << "] = " << brightnessVec_[i] << std::endl;
+    }
+    //_____*/
+
     DUMP(plot, wd_, "brightness_plot_%d.png", utils::VEC_PLOT_ACCUM);
 
     brightnessVec_.clear();
@@ -21,7 +31,7 @@ bool DayOrNight::dayOrNight_(const cv::Mat &input) {
     bool found { false };
 
     if (pos_ <= lastPos_) { // After backtracking
-        TRACE("* day_or_night_(%d): returning", pos_);
+        TRACE("* day_or_night_(%d): returning (lastPos = %d)", pos_, lastPos_);
         return found;
     }
 
@@ -36,9 +46,9 @@ bool DayOrNight::dayOrNight_(const cv::Mat &input) {
         breakpoints_.push_back(pos_);
     } else {
         // Calculate diference in brightness since last pos_
-        double dif = abs(brightness - lastBr_);
+        double dif = brightness - lastBr_;
 
-        if (dif > TOLERANCE) {
+        if (abs(dif) > TOLERANCE) {
             // Increment times tolerance surpassed
             timesSurpassed_++;
             TRACE("* day_or_night_(): !! (%d) lastPos = %d lastBr = %.2f"
@@ -65,6 +75,9 @@ bool DayOrNight::dayOrNight_(const cv::Mat &input) {
                 breakpoints_.push_back(++lastPos_);
                 found = true;
                 TRACE("* day_or_night(): ### breakpoint found: %d\n", lastPos_);
+
+                if (dif > 0) interval_ = common::DAY;
+                else interval_ = common::NIGHT;
             }
 
             // Restart to this point
@@ -76,10 +89,24 @@ bool DayOrNight::dayOrNight_(const cv::Mat &input) {
     return found;
 }
 //------------------------------------------------------------------------------
+void DayOrNight::updateOutputData(common::OutputDataContainer &data) {
+    // Only update if first time AND only if data is incorrect
+    if (breakpoints_.size() == 2 && data[0].interval == interval_) {
+        TRACE("* DayOrNight::updateOutputData(): updating data to %s from %d to %d",
+              common::DAY == interval_ ? "night" : "day", initPos_, breakpoints_.back());
+
+        for (int i = initPos_; i < breakpoints_.back(); i++) {
+            data[i-initPos_].interval = !interval_;
+        }
+    }
+    TRACE("* DayOrNight::updateOutputData(): done updating");
+    // Otherwise it's correct
+}
+//------------------------------------------------------------------------------
 int DayOrNight::process(const cv::Mat &input, common::Interval &interval) {
 
     if (dayOrNight_(input)) {
-        interval = !interval;
+        interval = interval_;
         pos_ = breakpoints_.back();
         return breakpoints_.back();
     }

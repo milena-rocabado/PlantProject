@@ -9,7 +9,9 @@ static const int VEC_PLOT_ACCUM { 5 };
 
 void plotHist(const cv::Mat &hist, cv::Mat &output, int n = -1);
 
-void plotVector(std::vector<double> vector, cv::Mat &output, int accum = VEC_PLOT_ACCUM);
+void plotHist(const cv::Mat &hist, cv::Mat &output, std::vector<int> n);
+
+void plotVector(std::vector<double> vector, cv::Mat &output, int accum = VEC_PLOT_ACCUM, int startPos = 0);
 
 }
 
@@ -44,7 +46,7 @@ void plotVector(std::vector<double> vector, cv::Mat &output, int accum = VEC_PLO
 }
 
 #define DUMP_PLOT_P(pos__, vec__, mat__, wd__, file__, ...) { \
-    if (pos__ % N_TRACE == 0) { \
+    if (/*pos__ % N_TRACE == 0*/pos__ == 150 || pos__ == 750) { \
         DUMP_PLOT(vec__, mat__, wd__, file__, __VA_ARGS__); \
     } \
 }

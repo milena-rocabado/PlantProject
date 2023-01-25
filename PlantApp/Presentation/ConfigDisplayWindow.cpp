@@ -9,6 +9,12 @@ const cv::Scalar ConfigDisplayWindow::POT_COLOR { 0, 255, 0 };
 ConfigDisplayWindow::ConfigDisplayWindow()
 {}
 //------------------------------------------------------------------------------
+void ConfigDisplayWindow::callback(int event, int, int, int, void *) {
+    if (event == cv::EVENT_CLOSE) {
+        cv::destroyWindow(WIN_NAME);
+    }
+}
+//------------------------------------------------------------------------------
 void ConfigDisplayWindow::setImage(const cv::Mat &image) {
     image_ = image.clone();
 }
@@ -44,6 +50,7 @@ void ConfigDisplayWindow::display(const cv::Rect &roi, int yPot) {
     // Wait until key pressed
     cv::waitKey();
     // Close window
+    cv::namedWindow(WIN_NAME);
     cv::destroyWindow(WIN_NAME);
 
     TRACE("< ConfigDisplayWindow::display()");

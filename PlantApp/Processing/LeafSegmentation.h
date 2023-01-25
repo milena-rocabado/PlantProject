@@ -37,7 +37,7 @@ private:
     static constexpr int TIMEBAR_HEIGHT { 20 };
 
     // Structural element size for clean-up morphological operation
-    static constexpr int ELEMENT_SIZE { 5 }; //3
+    static constexpr int ELEMENT_SIZE { 5 };
 
     // Background color
     inline static const uchar BG_COLOR { 0 };

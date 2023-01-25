@@ -2,6 +2,7 @@
 #define ENUMS_H
 
 #include <ostream>
+#include <vector>
 
 namespace common {
 
@@ -36,7 +37,7 @@ typedef struct {
 
 static constexpr int CONTAINER_SIZE { 5 };
 
-typedef OutputData_t OutputDataContainer[CONTAINER_SIZE];
+typedef std::vector<OutputData_t> OutputDataContainer;
 
 }
 #endif // ENUMS_H

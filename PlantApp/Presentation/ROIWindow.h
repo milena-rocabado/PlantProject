@@ -16,6 +16,9 @@ private:
     static inline const std::string WIN_NAME = "Select ROI";
 
 private:
+    static void callback(int event, int, int, int, void *);
+
+private:
 
     // Image that will be displayed
     cv::Mat image_;

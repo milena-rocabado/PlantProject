@@ -41,21 +41,21 @@ void Thresholding::findBackgroundThresh_(const cv::Mat &hist) {
         if (val >= VALLEY_THRESHOLD || (equal(0, val) && timesSurpassed != 0)) {
             timesSurpassed++;
 
-            TRACE_IF(valleyLen > 0, "* Thresholding::findBackgroundThresh_(%d): "
-                                    "[%d, %.0f] -> VALLEY_THRESHOLD surpassed %d times",
-                     pos_, i, static_cast<double>(val), timesSurpassed);
+//            TRACE_IF(valleyLen > 0, "* Thresholding::findBackgroundThresh_(%d): "
+//                                    "[%d, %.0f] -> VALLEY_THRESHOLD surpassed %d times",
+//                     pos_, i, static_cast<double>(val), timesSurpassed);
 
             if (timesSurpassed > MIN_TIMES_SURPASSED) {
                 // Valley too small -> restart valley
                 if (valleyLen < MIN_TIMES_SURPASSED) { // at least as big as growing sequence
-                    TRACE_IF(valleyLen > 0, "* Thresholding::findBackgroundThresh_(%d): "
-                                            "[%d, %.0f] -> valley too small (%d), reset valley",
-                             pos_, i, static_cast<double>(val), valleyLen);
+//                    TRACE_IF(valleyLen > 0, "* Thresholding::findBackgroundThresh_(%d): "
+//                                            "[%d, %.0f] -> valley too small (%d), reset valley",
+//                             pos_, i, static_cast<double>(val), valleyLen);
                     valleyLen = 0;
                 }
                 // Valley big enough -> end loop
                 else {
-                    TRACE("* Thresholding::findBackgroundThresh_(%d): valley found !!", pos_);
+//                    TRACE("* Thresholding::findBackgroundThresh_(%d): valley found !!", pos_);
                     valleyFound = true;
                     break;
                 }
@@ -63,9 +63,9 @@ void Thresholding::findBackgroundThresh_(const cv::Mat &hist) {
         } else { // Value under VALLEY_THRESHOLD
             // If start of streak, store initial bin
             if (valleyLen == 0) {
-                TRACE("* Thresholding::findBackgroundThresh_(%d): "
-                      "[%d, %.0f] -> valley start",
-                      pos_, i, static_cast<double>(val));
+//                TRACE("* Thresholding::findBackgroundThresh_(%d): "
+//                      "[%d, %.0f] -> valley start",
+//                      pos_, i, static_cast<double>(val));
                 initBin = i;
             }
             endBin = i;
@@ -74,14 +74,14 @@ void Thresholding::findBackgroundThresh_(const cv::Mat &hist) {
             valleyLen++;
             timesSurpassed = 0;
 
-            TRACE("* Thresholding::findBackgroundThresh_(%d): "
-                  "[%d, %.0f] -> valley end updated, valleyLen = %d",
-                  pos_, i, static_cast<double>(val), valleyLen);
+//            TRACE("* Thresholding::findBackgroundThresh_(%d): "
+//                  "[%d, %.0f] -> valley end updated, valleyLen = %d",
+//                  pos_, i, static_cast<double>(val), valleyLen);
         }
     }
 
     if (valleyFound) {
-        bgThresh_ = endBin * 2;
+        bgThresh_ = endBin * 2 - THRESHOLD_ADJ;
 
         TRACE("* Thresholding::findBackgroundThresh_(%d): threshold found = %.0f",
               pos_, bgThresh_);
@@ -91,7 +91,7 @@ void Thresholding::findBackgroundThresh_(const cv::Mat &hist) {
             TRACE_ERR("* Thresholding::searchHistogram_(%d): error case b: "
                       "initBin = %d endBin= %d thresh = %.0f", pos_, initBin, endBin, bgThresh_);
             debug_(hist, 'b');
-        } else if (bgThresh_ > 130) {
+        } else if (bgThresh_ > 140) {
             TRACE_ERR("* Thresholding::searchHistogram_(%d): error case c: "
                       "initBin = %d endBin= %d thresh = %.0f", pos_, initBin, endBin, bgThresh_);
             debug_(hist, 'c');
@@ -112,7 +112,6 @@ void Thresholding::findBackgroundThresh_(const cv::Mat &hist) {
     TRACE("< Thresholding::findBackgroundThresh_(%d)", pos_);
 }
 //------------------------------------------------------------------------------
-/*
 void Thresholding::findFloorThresh_(const cv::Mat &hist) {
     auto equals = [] (float a, float b) -> bool {
         return abs(a-b) < 0.001f;
@@ -148,20 +147,35 @@ void Thresholding::findFloorThresh_(const cv::Mat &hist) {
         lastVal = val;
     }
 
-    floorThresh_ = minimum - 10;
+    floorThresh_ = minimum - 5;
 }
-*/
 //------------------------------------------------------------------------------
 void Thresholding::findThreshold_(const cv::Mat &frame) {
 
     // Calculate histogram
     hist::Histogram_t calculateHist;
     cv::Mat hist;
-    calculateHist.histSize[0] = HIST_SIZE;
+    calculateHist.histSize[0] = Thresholding::HIST_SIZE;
     calculateHist(frame(roi_), hist);
 
     // Search histogram for thresholds
     findBackgroundThresh_(hist);
+
+    //DELETE__
+    calculateHist.histSize[0] = hist::HIST_SIZE;
+    calculateHist(frame(roi_), hist);
+    findFloorThresh_(hist);
+    std::cout << "floortresh = " << floorThresh_ << std::endl;
+
+    if (pos_ == 150 || pos_ == 750) {
+        hist::Histogram_t calc;
+        cv::Mat hist, plot;
+        calc(frame(roi_), hist);
+        utils::plotHist(hist, plot, {static_cast<int>(bgThresh_), static_cast<int>(floorThresh_)});
+        DUMP(plot, wd_, "range_hist_%d.png", pos_);
+        dump_ = true;
+    }
+    //__
 }
 //------------------------------------------------------------------------------
 double Thresholding::otsuThreshold_(const cv::Mat &input, cv::Mat &output) {
@@ -173,6 +187,17 @@ double Thresholding::otsuThreshold_(const cv::Mat &input, cv::Mat &output) {
 
     // Apply threshold to whole image
     threshold(input, output, thresh, 255, cv::THRESH_BINARY);
+
+    //DELETE__
+    if (pos_ == 150 || pos_ == 750) {
+        hist::Histogram_t calc;
+        cv::Mat hist, plot;
+        calc(input(roi_), hist);
+        utils::plotHist(hist, plot, static_cast<int>(thresh));
+        DUMP(plot, wd_, "thresh_hist_otsu_%d.png", pos_);
+        DUMP(output(roi_), wd_, "thresh_out_otsu_%d.png", pos_);
+    }
+    //__
 
     return thresh;
 }
@@ -197,11 +222,11 @@ void Thresholding::process(const cv::Mat &input, cv::Mat &output) {
 
     cv::threshold(input, output, bgThresh_, 255.0, cv::THRESH_BINARY);
 
-//    double br = cv::mean(input(roi_))[0];
-//    std::cout << "*****[" << pos_ << "] br now = " << br << " --- prev br = " << brightness_
-//              << " --- diff = " << abs(br-brightness_)
-//              << " --- threshold = " << bgThresh_ << std::endl;
-//    brightness_ = br;
+    //DELETE___
+    cv::Mat rangeOut;
+    cv::inRange(input, floorThresh_, bgThresh_, rangeOut);
+    DUMP_P(pos_, rangeOut(roi_), wd_, "range_out_%d.png", pos_);
+    //___
 
 #endif
 

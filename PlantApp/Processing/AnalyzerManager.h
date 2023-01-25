@@ -62,8 +62,6 @@ public:
 
     void setEndPosition(int endPos);
 
-    void setStartInterval(common::Interval interval) { interval_ = interval; }
-
     void setVideoOutputFlag(bool flag) { videoOutputFlag_ = flag; }
 
     // Getter functions --------------------------------------------------------
@@ -114,8 +112,7 @@ private:
     int initPos_;
     // End position
     int endPos_;
-    // Current position in frames (zero indexed)
-    int pos_;
+
     // Current interval (day/night)
     common::Interval interval_;
 

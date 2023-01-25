@@ -54,8 +54,6 @@ private slots:
 
     void on_pbResetPositions_clicked();
 
-    void on_cbxDayNight_currentIndexChanged(int index);
-
     void on_chkOutput_stateChanged(int arg1);
 
     void on_pbProcess_clicked();
@@ -75,8 +73,6 @@ private:
     void resetSpnValues_();
 
     void setErrorState_(QString errorMsg);
-
-    void setCbxValues_();
 
 signals:
     void processingDone();

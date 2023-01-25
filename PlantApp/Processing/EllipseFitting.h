@@ -8,12 +8,14 @@
 class EllipseFitting
 {
 public:
-    EllipseFitting() {}
+    EllipseFitting();
 
     void process(const cv::Mat &leaf,
                  cv::Mat &ellipseDrawing,
                  cv::Mat &contourDrawing,
                  float &angle, common::Side side);
+
+    void initialize();
 
     void setPosition(int pos) { pos_ = pos; }
 
@@ -21,14 +23,10 @@ public:
 
     void setDumpDirectory(std::string dir) { wd_ = dir; }
 
-    cv::Mat getContoursLOut() { return contoursLOut_; }
-
-    cv::Mat getContoursROut() { return contoursROut_; }
-
 private:
-    static constexpr int MAX_CONTOUR_DISTANCE { 75 };
+    static constexpr int MAX_CONTOUR_DISTANCE { 35 };
 
-    static constexpr float MAX_DIFFERENCE { 1.f };
+    static constexpr float MAX_DIFFERENCE { 5.f };
 
 private:
     void findLeafContour_(const std::vector<std::vector<cv::Point>> &contours,

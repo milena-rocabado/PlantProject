@@ -64,7 +64,7 @@ void LeafSegmentation::searchSides_(cv::Mat &ref, cv::Mat &lRef, cv::Mat &rRef,
     }
 
     // From now on, limit search radius
-    if (k == MAX_WIDTH) {
+    if (k == MAX_WIDTH && row > ref.rows/3) {
         if (!maxWidthReached_)
             TRACE_P(pos_, "* LeafSegmentation::searchSides_(%d): max width reached,"
                 "start limiting radius", pos_);
@@ -278,6 +278,9 @@ void LeafSegmentation::process(const cv::Mat &input, cv::Mat &left, cv::Mat &rig
             colorFromVector_(ref, lRef, rRef);
         }
     }
+
+    DUMP_P(pos_, lRef, wd_, "leaf_r_preclean_%d.png", pos_);
+    DUMP_P(pos_, rRef, wd_, "leaf_l_preclean_%d.png", pos_)
 
     hidePlantPot_(left);
     cleanUp_(left);

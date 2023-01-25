@@ -20,6 +20,10 @@ private:
 
 private:
 
+    static void callback(int event, int x, int y, int flags, void *);
+
+private:
+
     // Image that will be displayed
     cv::Mat image_;
 };

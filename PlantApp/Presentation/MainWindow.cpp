@@ -29,7 +29,6 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     setEnabledConfigurationElements_(false);
-    setCbxValues_();
 
     connect(this, SIGNAL(processingDone()), this,
             SLOT(on_ProcessingDone_received()));
@@ -48,7 +47,6 @@ void MainWindow::setEnabledConfigurationElements_(bool enabled) {
     ui->spnInitPos->setEnabled(enabled);
     ui->spnEndPos->setEnabled(enabled);
     ui->pbResetPositions->setEnabled(enabled);
-    ui->cbxDayNight->setEnabled(enabled);
     ui->lneOutputPath->setEnabled(enabled);
     ui->pbExaminarOutput->setEnabled(enabled);
     ui->chkOutput->setEnabled(enabled);
@@ -73,19 +71,11 @@ void MainWindow::startProcessing_() {
 //------------------------------------------------------------------------------
 void MainWindow::resetSpnValues_() {
     int max = manager_->getMaxFrames();
-    ui->spnInitPos->setRange(1, max);
-    ui->spnEndPos->setRange(1, max);
+    ui->spnInitPos->setRange(0, max);
+    ui->spnEndPos->setRange(0, max);
 
-    ui->spnInitPos->setValue(1);
+    ui->spnInitPos->setValue(0);
     ui->spnEndPos->setValue(max);
-}
-//------------------------------------------------------------------------------
-void MainWindow::setCbxValues_() {
-    for (int i = 0; i < common::INTERVAL_NUM; i++) {
-        std::stringstream ss;
-        ss << static_cast<common::Interval>(i);
-        ui->cbxDayNight->addItem(QString::fromStdString(ss.str()), i);
-    }
 }
 //------------------------------------------------------------------------------
 void MainWindow::resetElements_() {
@@ -244,10 +234,6 @@ void MainWindow::on_spnEndPos_valueChanged(int pos) {
 //------------------------------------------------------------------------------
 void MainWindow::on_pbResetPositions_clicked() {
     resetSpnValues_();
-}
-//------------------------------------------------------------------------------
-void MainWindow::on_cbxDayNight_currentIndexChanged(int index) {
-    manager_->setStartInterval(static_cast<common::Interval>(index));
 }
 //------------------------------------------------------------------------------
 void MainWindow::on_chkOutput_stateChanged(int state) {

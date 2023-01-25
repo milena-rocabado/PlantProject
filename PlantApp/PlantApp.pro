@@ -30,15 +30,15 @@ SOURCES += \
     Common/Utils.cpp \
     Presentation/ConfigDisplayWindow.cpp \
     Presentation/PotPositionWindow.cpp \
-        Processing/AnalyzerManager.cpp \
-        Processing/PreProcessing.cpp \
-        Processing/DayOrNight.cpp \
-        Processing/Thresholding.cpp \
-        Processing/LeafSegmentation.cpp \
-        Processing/EllipseFitting.cpp \
-        Presentation/MainWindow.cpp \
-        Presentation/ROIWindow.cpp \
-        main.cpp \
+    Processing/AnalyzerManager.cpp \
+    Processing/PreProcessing.cpp \
+    Processing/DayOrNight.cpp \
+    Processing/Thresholding.cpp \
+    Processing/LeafSegmentation.cpp \
+    Processing/EllipseFitting.cpp \
+    Presentation/MainWindow.cpp \
+    Presentation/ROIWindow.cpp \
+    main.cpp \
 
 HEADERS += \
         Common/Colors.h \
